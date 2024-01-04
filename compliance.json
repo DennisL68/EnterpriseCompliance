@@ -1,0 +1,116 @@
+﻿{
+    "WindowsEoL" : {
+        "Active"    : null,
+        "Settings"  : null
+    },
+
+    "WindowsLicense" :  {
+        "Active"    : null,
+        "Settings"  : null
+    },
+
+    "WindowsUpdate" :  {
+        "Active"    : null,
+        "Settings"  : null
+    },
+
+    "UserAccount" :  {
+        "Active"    : null,
+        "Settings"  : {
+            "IsBuiltInAdmin" : null,
+            "BuiltInAdminOff" : null,
+            "AutoLogonOff"  : null,
+            "NotUsingBlankPassword" : null,
+            "RequireComplexPassword" : null,
+            "MinimumPasswordLength" : null,
+            "RecommendedPasswordLength" : null,
+            "LockOutScreenOn" : null,
+            "AutoSleepOn" : null
+        }
+    },
+
+    "Machine" :  {
+        "Active"    : null,
+        "Settings"  : {
+            "EFIPartitionActive" : null,
+            "HasTPM2orHigher" : null,
+            "TPMStatusIsOk" : null,
+            "BitLockerInstalled" : null,
+            "BitLockerOnOSVolume" : null,
+            "UACLevel": null,
+            "SpectreMeltdownIsHandled" : null,
+            "CPUFeatures" : {
+                "Feature1" : null
+            }
+        }
+    },
+
+    "ExploitProtection" :  {
+        "Active"    : null,
+        "Settings"  : {
+            "ControlFlowGuardIsActive" : null,
+            "DataExcutionPreventionIsActive" : null,
+            "ForceImageRandomizationIsActive" : null,
+            "HighEntropyASLRIsActive" : null,
+            "ExceptionChainsSEHOPIsActive" : null,
+            "ValidateHeapIntegrityIsActive" : null
+        }
+    },
+
+    "WindowsDefender" :  {
+        "Active"    : null,
+        "Settings"  : {
+            "AntiMalwareIsActive" : null,
+            "AntiSpywareIsActive" : null,
+            "AntiSpywareSignatureIsCurrent" : null,
+            "AnitVirusIsActive" : null,
+            "AnitVirusSignatureIsCurrent" : null,
+            "BehaviorMonitoringIsActive" : null,
+            "LastFullScanIntervall" : null,
+            "LastQuickScanInterall" : null,
+            "RealTimeProtectionIsActive" : null,
+            "TamperProtectionIsActive" : null
+        }
+    },
+
+    "Firewall" :  {
+        "Active"    : null,
+        "Settings"  : {
+            "FireWallIsEnabled" : null,
+            "FireWallIsRunning" : null,
+
+            "FireWallIsOnForPrivate" : null,
+            "FireWallRulesExistsForPrivate" : null,
+            "NoAllowAllForPrivate" : null,
+            
+            "FireWallIsOnForPublic" : null,
+            "FireWallRulesExistsForPublic" : null,
+            "NoAllowAllForPublic" : null,
+            
+            "FireWallIsOnForDomain" : null,
+            "FireWallRulesExistsForDomain" : null,
+            "NoAllowAllForDomain" : null
+        }
+    },
+
+    "InternetSecurity" :  {
+        "Active"    : false,
+        "Settings"  : null
+    },
+
+    "Telemetry" :  {
+        "Active"    : false,
+        "Settings"  : {
+            "PowerShell7TelemetryIsDisabled" : null,
+
+            "VSCodeUsageDataIsDisabled" : null,
+            "VSCodeCrashReportsIsDisabled" : null,
+            "VSCodePluginGitLensUsageDataIsDisabled" : false,
+
+            "WindowsDataCollectionIsDisabled" : false,
+            "MSCustomerExperienceImprovementProgramIsDisabled" : false,
+            "ConnectedUserExperiencesandTelemetryServiceIsDisabled" : false,
+            "ConnectedUserExperiencesandTelemetryServiceIsNotRunning" : false
+        }
+    }
+}
