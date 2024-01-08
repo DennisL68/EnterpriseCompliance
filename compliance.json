@@ -1,116 +1,139 @@
-﻿{
-    "WindowsEoL" : {
-        "Active"    : null,
-        "Settings"  : null
-    },
+﻿[
+    {
+        "WindowsEoL" : {
+            "Active"    : null,
+            "Settings"  : {
+                "Windows Server 2016 1607" : ["14339", "2022-01-11", "01-01-01", "2027-01-11"],
+                "Windows 10 1809"   : ["17763", "2021-05-11", "2024-01-09", "2029-01-09"],
+                "Windows Server 2019 1809": ["17763", "2024-01-09", "01-01-01", "2029-01-02"],
+                "Windows 10 1903"   : ["18362", "2020-12-08"],
+                "Windows 10 1909"   : ["18363", "2022-05-10"],
+                "Windows 10 2004"   : ["19041", "2021-12-14"],
+                "Windows 10 20H2"   : ["19042", "2023-05-09"],
+                "Windows 10 21H1"   : ["19043", "2022-12-13"],
+                "Windows 10 21H2"   : ["19044", "2024-06-11", "2027-01-12", "01-01-01"],
+                "Windows 10 22H2"   : ["19045", "2025-10-14"],
+                "Windows Server 2022": ["20348", "2026-10-13", "01-01-01", "2031-10-14"],
+                "Windows 11 21H2"   : ["22000", "2024-10-08"],
+                "Windows 11 22H2"   : ["22621", "2025-10-14"],
+                "Windows 11 23H2"   : ["22631", "2026-11-10"]
+            },
+            "Comment"   : "Build, EoL for Enterprise, LTS (not servers), Extended Suport",
+            "Refs"      : [
+                "https://learn.microsoft.com/en-us/windows-server/get-started/windows-server-release-info",
+                "https://learn.microsoft.com/en-us/windows/release-health/release-information",
+                "https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information"
+            ]
+        },
 
-    "WindowsLicense" :  {
-        "Active"    : null,
-        "Settings"  : null
-    },
+        "WindowsLicense" :  {
+            "Active"    : null,
+            "Settings"  : null
+        },
 
-    "WindowsUpdate" :  {
-        "Active"    : null,
-        "Settings"  : null
-    },
+        "WindowsUpdate" :  {
+            "Active"    : null,
+            "Settings"  : null
+        },
 
-    "UserAccount" :  {
-        "Active"    : null,
-        "Settings"  : {
-            "IsBuiltInAdmin" : null,
-            "BuiltInAdminOff" : null,
-            "AutoLogonOff"  : null,
-            "NotUsingBlankPassword" : null,
-            "RequireComplexPassword" : null,
-            "MinimumPasswordLength" : null,
-            "RecommendedPasswordLength" : null,
-            "LockOutScreenOn" : null,
-            "AutoSleepOn" : null
-        }
-    },
+        "UserAccount" :  {
+            "Active"    : null,
+            "Settings"  : {
+                "IsBuiltInAdmin" : null,
+                "BuiltInAdminOff" : null,
+                "AutoLogonOff"  : null,
+                "NotUsingBlankPassword" : null,
+                "RequireComplexPassword" : null,
+                "MinimumPasswordLength" : null,
+                "RecommendedPasswordLength" : null,
+                "LockOutScreenOn" : null,
+                "AutoSleepOn" : null
+            }
+        },
 
-    "Machine" :  {
-        "Active"    : null,
-        "Settings"  : {
-            "EFIPartitionActive" : null,
-            "HasTPM2orHigher" : null,
-            "TPMStatusIsOk" : null,
-            "BitLockerInstalled" : null,
-            "BitLockerOnOSVolume" : null,
-            "UACLevel": null,
-            "SpectreMeltdownIsHandled" : null,
-            "CPUFeatures" : {
-                "Feature1" : null
+        "Machine" :  {
+            "Active"    : null,
+            "Settings"  : {
+                "EFIPartitionActive" : null,
+                "HasTPM2orHigher" : null,
+                "TPMStatusIsOk" : null,
+                "BitLockerInstalled" : null,
+                "BitLockerOnOSVolume" : null,
+                "UACLevel": null,
+                "SpectreMeltdownIsHandled" : null,
+                "CPUFeatures" : {
+                    "Feature1" : null
+                }
+            }
+        },
+
+        "ExploitProtection" :  {
+            "Active"    : null,
+            "Settings"  : {
+                "ControlFlowGuardIsActive" : null,
+                "DataExcutionPreventionIsActive" : null,
+                "ForceImageRandomizationIsActive" : null,
+                "HighEntropyASLRIsActive" : null,
+                "ExceptionChainsSEHOPIsActive" : null,
+                "ValidateHeapIntegrityIsActive" : null
+            }
+        },
+
+        "WindowsDefender" :  {
+            "Active"    : null,
+            "Settings"  : {
+                "AntiMalwareIsActive" : null,
+                "AntiSpywareIsActive" : null,
+                "AntiSpywareSignatureIsCurrent" : null,
+                "AnitVirusIsActive" : null,
+                "AnitVirusSignatureIsCurrent" : null,
+                "BehaviorMonitoringIsActive" : null,
+                "LastFullScanIntervall" : null,
+                "LastQuickScanInterall" : null,
+                "RealTimeProtectionIsActive" : null,
+                "TamperProtectionIsActive" : null
+            }
+        },
+
+        "Firewall" :  {
+            "Active"    : null,
+            "Settings"  : {
+                "FireWallIsEnabled" : null,
+                "FireWallIsRunning" : null,
+
+                "FireWallIsOnForPrivate" : null,
+                "FireWallRulesExistsForPrivate" : null,
+                "NoAllowAllForPrivate" : null,
+                
+                "FireWallIsOnForPublic" : null,
+                "FireWallRulesExistsForPublic" : null,
+                "NoAllowAllForPublic" : null,
+                
+                "FireWallIsOnForDomain" : null,
+                "FireWallRulesExistsForDomain" : null,
+                "NoAllowAllForDomain" : null
+            }
+        },
+
+        "InternetSecurity" :  {
+            "Active"    : false,
+            "Settings"  : null
+        },
+
+        "Telemetry" :  {
+            "Active"    : false,
+            "Settings"  : {
+                "PowerShell7TelemetryIsDisabled" : null,
+
+                "VSCodeUsageDataIsDisabled" : null,
+                "VSCodeCrashReportsIsDisabled" : null,
+                "VSCodePluginGitLensUsageDataIsDisabled" : false,
+
+                "WindowsDataCollectionIsDisabled" : false,
+                "MSCustomerExperienceImprovementProgramIsDisabled" : false,
+                "ConnectedUserExperiencesandTelemetryServiceIsDisabled" : false,
+                "ConnectedUserExperiencesandTelemetryServiceIsNotRunning" : false
             }
         }
-    },
-
-    "ExploitProtection" :  {
-        "Active"    : null,
-        "Settings"  : {
-            "ControlFlowGuardIsActive" : null,
-            "DataExcutionPreventionIsActive" : null,
-            "ForceImageRandomizationIsActive" : null,
-            "HighEntropyASLRIsActive" : null,
-            "ExceptionChainsSEHOPIsActive" : null,
-            "ValidateHeapIntegrityIsActive" : null
-        }
-    },
-
-    "WindowsDefender" :  {
-        "Active"    : null,
-        "Settings"  : {
-            "AntiMalwareIsActive" : null,
-            "AntiSpywareIsActive" : null,
-            "AntiSpywareSignatureIsCurrent" : null,
-            "AnitVirusIsActive" : null,
-            "AnitVirusSignatureIsCurrent" : null,
-            "BehaviorMonitoringIsActive" : null,
-            "LastFullScanIntervall" : null,
-            "LastQuickScanInterall" : null,
-            "RealTimeProtectionIsActive" : null,
-            "TamperProtectionIsActive" : null
-        }
-    },
-
-    "Firewall" :  {
-        "Active"    : null,
-        "Settings"  : {
-            "FireWallIsEnabled" : null,
-            "FireWallIsRunning" : null,
-
-            "FireWallIsOnForPrivate" : null,
-            "FireWallRulesExistsForPrivate" : null,
-            "NoAllowAllForPrivate" : null,
-            
-            "FireWallIsOnForPublic" : null,
-            "FireWallRulesExistsForPublic" : null,
-            "NoAllowAllForPublic" : null,
-            
-            "FireWallIsOnForDomain" : null,
-            "FireWallRulesExistsForDomain" : null,
-            "NoAllowAllForDomain" : null
-        }
-    },
-
-    "InternetSecurity" :  {
-        "Active"    : false,
-        "Settings"  : null
-    },
-
-    "Telemetry" :  {
-        "Active"    : false,
-        "Settings"  : {
-            "PowerShell7TelemetryIsDisabled" : null,
-
-            "VSCodeUsageDataIsDisabled" : null,
-            "VSCodeCrashReportsIsDisabled" : null,
-            "VSCodePluginGitLensUsageDataIsDisabled" : false,
-
-            "WindowsDataCollectionIsDisabled" : false,
-            "MSCustomerExperienceImprovementProgramIsDisabled" : false,
-            "ConnectedUserExperiencesandTelemetryServiceIsDisabled" : false,
-            "ConnectedUserExperiencesandTelemetryServiceIsNotRunning" : false
-        }
     }
-}
+]
