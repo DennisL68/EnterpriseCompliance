@@ -9,13 +9,13 @@
 #Requires -Modules PSWindowsUpdate,@{ModuleName='Pester';ModuleVersion='4.10.1'},PendingReboot,SpeculationControl
 
 function ConvertFrom-IniFile ($file) {
-    
+
     $ini = @{}
-  
+
     # Create a default section if none exist in the file.
     $section = "NO_SECTION"
     $ini[$section] = @{}
-  
+
     switch -regex -file $file {
       "^\[(.+)\]$" {
         $section = $matches[1].Trim()
@@ -24,7 +24,7 @@ function ConvertFrom-IniFile ($file) {
 
       "^\s*([^#].+?)\s*=\s*(.*)" {
         $name,$value = $matches[1..2]
-        
+
         if (!($name.StartsWith(";"))) {#not a comment
           $ini[$section][$name] = $value.Trim()
         }
@@ -38,7 +38,7 @@ function ConvertFrom-IniFile ($file) {
 }# end function
 
 Function Get-UacLevel {
-    $Uac = New-Object psobject | 
+    $Uac = New-Object psobject |
         select EnableLUA, ConsentPromptBehaviorAdmin, PromptOnSecureDesktop, NotifyLevel, NotifyLevelVal
 
     $PolicyKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
@@ -75,9 +75,9 @@ Function Get-UacLevel {
     }# end switch
 
     return $Uac
-} 
+}
 
-function Get-FireWallRuleProperties {
+function Get-FireWallRuleProperty {
 
     [CmdletBinding()]
     param (
@@ -86,7 +86,7 @@ function Get-FireWallRuleProperties {
     )
 
     process {
-        $FirewallRule | Select *, 
+        $FirewallRule | Select *,
         @{ n = 'Protocol';  e={($_ | Get-NetFirewallPortFilter).Protocol} },
         @{ n = 'LocalPort'; e={($_ | Get-NetFirewallPortFilter).LocalPort} },
         @{ l = 'RemotePort';e={($_ | Get-NetFirewallPortFilter).RemotePort} },
@@ -115,12 +115,12 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                         else {$_.WindowsVersion}
                     }
                 }
-            
+
             $Windows = ($WindowsInfo.OSName -replace "^(\S+\s){1}|(\s\S+){1}$") + #Remove first and last word
                 ' ' +
                 $WindowsInfo.Version
             write-host -ForegroundColor Yellow '      ' $Windows
-            
+
             $Today = Get-Date
 
             ($Today -lt [datetime]$Compliance.WindowsEoL.Settings.$Windows[1]) | Should -BeTrue
@@ -181,14 +181,14 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
         It 'Should not be running Builtin Admin' {
             ($BuiltinAdmin.SID -ne $MyAccount.SID) | Should -Be $true
         }
-        
+
         It 'Should not have Builtin Admin account enabled' {
             $BuiltinAdmin.Enabled | Should -Be $false
         }
 
         It 'Should not have blank passwords' {
             #$TestPwd = ConvertTo-SecureString '' -AsPlainText -Force #! Does not work with empty strings
-            #$TestCred = New-Object -TypeName System.Management.Automation.PSCredential $MyAccount.Name, $TestPwd 
+            #$TestCred = New-Object -TypeName System.Management.Automation.PSCredential $MyAccount.Name, $TestPwd
 
             Add-Type -AssemblyName System.DirectoryServices.AccountManagement
             $PrincipalObj = New-Object System.DirectoryServices.AccountManagement.PrincipalContext('machine',$Env:COMPUTERNAME)
@@ -198,13 +198,13 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
 
         It 'Should not use auto logon' {
             $AutoLogon = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').AutoAdminLogon
-        
+
             $AutoLogon | Should -Not -Be '1'
         }
 
         It 'Should not store AutoLogon password in cleartext' {
             $AutoLogonPwd = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').DefaultPassword
-        
+
             $AutoLogonPwd | Should -BeNullOrEmpty
         }
 
@@ -217,21 +217,21 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                 $IsAdmin | Should -Be $true -Because 'Check requires admin privileges'
             }
         }
-        
+
 
         if ($IsAdmin) {
             It 'Should have password length policy of at least 8 characters' {
                 [int]($SecCfg.'System Access'.MinimumPasswordLength) | Should -BeGreaterOrEqual 8
             }
-        } 
+        }
 
         if ($IsAdmin -and [int]($SecCfg.'System Access'.MinimumPasswordLength) -lt 12) {
             It 'Ought to have password length policy of at least 12 characters' {
                 Set-ItResult -Skipped -Because 'not required (NOT compliant)'
             }
-            
+
         }
-        
+
         if (!$IsAdmin){# skip password check
             It 'Should have password length policy' {
                 $IsAdmin | Should -Be $true -Because 'Check requires admin privileges'
@@ -241,7 +241,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
         It 'Should have lock out screen set' {#! Add Power & Sleep detection
             [bool][int]$ScreenSaveActive = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaveActive
             [bool][int]$ScreenSaverIsSecure = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaverIsSecure
-            
+
             if ($IsAdmin){
                 $InactivityLimit = $SecCfg.'Registry Values'.'MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\InactivityTimeoutSecs'
                 if ($InactivityLimit){#exists
@@ -269,7 +269,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
             $OsBitLockerVolume = Get-BitLockerVolume | where VolumeType -eq OperatingSystem
         }
         $EfiPart = Get-Disk | where IsBoot | Get-Partition | where GptType -eq '{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}'
-        
+
         It 'Ought to have EFI partition'{
             If ($EfiPart -eq $null) {
                 Set-ItResult -Skipped -Because 'not required (NOT compliant)'
@@ -278,17 +278,17 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                 Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
             }
         }
-        
+
         if ($EfiPart -ne $null) {#ok to test for UEFI settings
             It 'Ought to have UEFI Secure boot' {
                 if ($IsAdmin -and (Confirm-SecureBootUEFI)){
                     Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                } 
-    
+                }
+
                 if ($IsAdmin -and !(Confirm-SecureBootUEFI)){
                     Set-ItResult -Skipped -Because 'not required (NOT compliant)'
-                } 
-                
+                }
+
                 if (!$IsAdmin) {
                     Set-ItResult -Skipped -Because 'Check requires admin privileges'
                 }
@@ -328,11 +328,11 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
             $SpecMessage | Should -Not -Contain 'Suggested actions'
         }
 
-        <# 
+        <#
         It 'Should have CPU features' { #* This might come in handy at some point
             & $Env:Temp\Coreinfo64.exe -accepteula -f
             Get-CimInstance CIM_Processor | Select -Property ProcessorId
-        } 
+        }
         #>
 
     }#end context Machine
@@ -344,7 +344,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
         It 'Should have Control Flow Guard (CFG) set to default (On)'{
             $ExploitProt.CFG.Enable -eq 'NOTSET' -or  $ExploitProt.CFG.Enable -eq 'Enable' -and
             $ExploitProt.CFG.SuppressExports -eq 'NOTSET' -or  $ExploitProt.CFG.SuppressExports -eq 'Enable' -and
-            $ExploitProt.CFG.StrictControlFlowGuard -eq 'NOTSET' -or  $ExploitProt.CFG.StrictControlFlowGuard -eq 'Enable' |  
+            $ExploitProt.CFG.StrictControlFlowGuard -eq 'NOTSET' -or  $ExploitProt.CFG.StrictControlFlowGuard -eq 'Enable' |
                 Should -Be $true
         }
 
@@ -380,7 +380,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
         }
     }#end context exploit
 
-        
+
     Context '- Get Windows Defender status' {
 
         $MpStatus = Get-MpComputerStatus
@@ -433,7 +433,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
             else {
                 Set-ItResult -Skipped -Because 'not required'
             }
-            
+
         }
     }# end context Windows Defender
 
@@ -447,7 +447,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
             $FirewallRule = Get-NetFirewallRule | where {
                 $_.Enabled -eq $true -and
                 $_.Direction -eq 'Inbound'
-            } | Get-FireWallRuleProperties
+            } | Get-FireWallRuleProperty
         }
         else {# it will take to loooong :/
             $FirewallRule = Get-NetFirewallRule | where {
@@ -455,7 +455,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                 $_.Direction -eq 'Inbound'
             }
         }
-        
+
 
         It 'Should have FireWall enabled' {
             $MpsSvc.StartType | Should -Be 'Automatic'
@@ -474,7 +474,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
 
         }
 
-        
+
         It 'Ought not to have an "allow all" for Private networks' {
             if ($IsAdmin){
                 if (($FirewallRule | where {
@@ -493,7 +493,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                 Set-ItResult -Skipped -Because 'Test will take to long as non admin'
             }
         }
-        
+
 
         It 'Should be turned on for Public networks' {
             ($FirewallProfile | where Name -like 'Public').Enabled | Should -Be $true
@@ -545,11 +545,10 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                 Set-ItResult -Skipped -Because 'Test will take to long as non admin'
             }
         }
-        
-        
+
     }#end context Firewall
 
-<# 
+<#
     Context '- Get Internet Security Settings' {
         It 'Should have Internet Security Settings' {
             Set-ItResult -Skipped -Because 'Test does not exist yet' #! Fix
@@ -567,14 +566,14 @@ Describe 'MS Telemetry Compliance' -Tag Telemetry {
             It 'Should not send Telemetry for PoSH 7.x' {
                 $ENV:POWERSHELL_TELEMETRY_OPTOUT | Should -Not -BeNullOrEmpty
             }
-    
+
         }#end context PoSH
     }# end if
-    
+
     $MyLocalAppPath = [Environment]::GetFolderPath('LocalApplicationData')
 
     if (
-        (Test-Path $Env:ProgramFiles\'Microsoft VS Code') -or 
+        (Test-Path $Env:ProgramFiles\'Microsoft VS Code') -or
         (Test-Path $MyLocalAppPath\Programs\'Microsoft VS Code')
         ){#VS Code is installed
 
@@ -582,26 +581,26 @@ Describe 'MS Telemetry Compliance' -Tag Telemetry {
 
             $MyAppPath = [Environment]::GetFolderPath('ApplicationData')
             $CodeSettings = get-content $MyAppPath\code\user\settings.json -ErrorAction SilentlyContinue | ConvertFrom-Json
-            
+
             It 'Should not send VS Code Usage data'{
                 $CodeSettings.'telemetry.enableTelemetry' | Should -Be 'False'
             }
-    
+
             It 'Should not send VS Code Crash reports' {
                 $CodeSettings.'telemetry.enableCrashReporter' | Should -Be 'False'
             }
-    
-            #! GitLens defaults to optout buy uses different values
-            #TODOD Verify GitLens exists before checking for OptOut 
+
+            #! GitLens defaults to optout but uses different values
+            #TODOD Verify GitLens exists before checking for OptOut
             <# It 'Should not send GitLens usage data'{
                 $CodeSettings.'gitlens.advanced.telemetry.enabled' | Should -Be 'False'
             } #>
-    
+
         }#end context VS Code
     }#end if
 
     Context '- Get Windows Telemetry' {
-        
+
         It 'Should not send Windows Data collections'{
             if ((Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection).AllowTelemetry -eq 0){
                 Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
@@ -650,10 +649,12 @@ Describe 'MS Telemetry Compliance' -Tag Telemetry {
     Pester needs to be installed using:
 
     PS:> Install-Module pester -RequiredVersion 4.10.1 -SkipPublisherCheck -Force
-    
+
     The other modules can be installed as ordinary modules.
 
     Some tests require admin permissions to be perfomed.
+
+    Make sure to configure the compliance.json file before running the test.
 
 .EXAMPLE
   .\Get-MiniCompliance.Tests.ps1
