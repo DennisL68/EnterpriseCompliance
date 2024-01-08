@@ -96,6 +96,8 @@ function Get-FireWallRuleProperties {
 
 }
 
+$Compliance = Get-Content .\compliance.json | ConvertFrom-Json
+
 Describe '- Check Windows environment Compliance'  -Tag Environment {
 
     Context '- Check Windows version' {
@@ -118,25 +120,10 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                 ' ' +
                 $WindowsInfo.Version
             write-host -ForegroundColor Yellow '      ' $Windows
-            $VersionEoLDate = @{ #hash of versions with with corresponding build numbers and GAC Ent EoL
-                'Windows 10 1809'           = '17763','2021-05-11'
-                'Windows Server 2019 1809'  = '17763','2024-01-09'
-                'Windows 10 1903'           = '18362','2020-12-08'
-                'Windows 10 1909'           = '18363','2022-05-10'
-                'Windows 10 2004'           = '19041','2021-12-14'
-                'Windows 10 20H2'           = '19042','2023-05-09'
-                'Windows 10 21H1'           = '19043','2022-12-13'
-                'Windows 10 21H2'           = '19044','2024-06-11'
-                'Windows 10 22H2'           = '19045','2025-10-14'
-                'Windows Server 2022'       = '20348','2026-10-13'
-                'Windows 11 21H2'           = '22000','2024-10-08'
-                'Windows 11 22H2'           = '22621','2025-10-14'
-                'Windows 11 23H2'           = '22631','2026-11-10'
-            }
             
             $Today = Get-Date
 
-            ($Today -lt [datetime]($VersionEoLDate[$Windows][-1])) | Should -BeTrue
+            ($Today -lt [datetime]$Compliance.WindowsEoL.Settings.$Windows[1]) | Should -BeTrue
         }
     }
 
