@@ -76,7 +76,10 @@
                 "HighEntropyASLRIsActive" : null,
                 "ExceptionChainsSEHOPIsActive" : null,
                 "ValidateHeapIntegrityIsActive" : null
-            }
+            },
+            "Refs"   : [
+                "https://docs.microsoft.com/en-us/windows/security/threat-protection/microsoft-defender-atp/enable-exploit-protection#powershell"
+            ]
         },
 
         "WindowsDefender" :  {
@@ -121,7 +124,7 @@
         },
 
         "Telemetry" :  {
-            "Active"    : false,
+            "Active"    : null,
             "Settings"  : {
                 "PowerShell7TelemetryIsDisabled" : null,
 
