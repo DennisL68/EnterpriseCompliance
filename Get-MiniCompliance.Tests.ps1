@@ -8,6 +8,7 @@
 
 #Requires -Modules PSWindowsUpdate,@{ModuleName='Pester';ModuleVersion='4.10.1'},PendingReboot,SpeculationControl
 
+#region functions
 function ConvertFrom-IniFile ($file) {
 
     $ini = @{}
@@ -96,6 +97,8 @@ function Get-FireWallRuleProperty {
 
 }
 
+#endregion functions
+
 $Compliance = Get-Content .\compliance.json | ConvertFrom-Json
 
 $ComplianceTypes =  $Compliance |
@@ -157,6 +160,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
         }
     }
 }
+
 Describe '- Check Security Compliance' -Tag Security {
 
     if ($Compliance.WindowsUpdate.Active) {
@@ -379,8 +383,11 @@ Describe '- Check Security Compliance' -Tag Security {
                     Should -Be $true
             }
 
-            It 'Should have Force Randomization for Images (Mandatory ASL) set to at least default (Off)' {
-                $true | Should -Be $true
+            It 'Should have Force Randomization for Images (Mandatory ASLR) set to at least default (Off)' {
+                $ExploitProt.ASLR.ForceRelocateImages -eq 'NOTSET' -or
+                $ExploitProt.ASLR.ForceRelocateImages -eq 'ON' -or
+                $ExploitProt.ASLR.ForceRelocateImages -eq 'OFF' |
+                    Should -Be $true
             }
 
             It 'Should have Randomize memory allocations (Bottom-up ASLR) set to default (On)' {
