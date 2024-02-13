@@ -33,15 +33,17 @@
 
         "WindowsUpdate" :  {
             "Active"    : null,
-            "Settings"  : null
+            "Settings"  : {
+                "LastInstallMaxAge" : null
+            }
         },
 
         "UserAccount" :  {
             "Active"    : null,
             "Settings"  : {
-                "IsBuiltInAdmin" : null,
-                "BuiltInAdminOff" : null,
-                "AutoLogonOff"  : null,
+                "IsNotBuiltInAdmin" : null,
+                "BuiltInAdminDisabled" : null,
+                "AutoLogonDisabled"  : null,
                 "NotUsingBlankPassword" : null,
                 "RequireComplexPassword" : null,
                 "MinimumPasswordLength" : null,
@@ -55,11 +57,14 @@
             "Active"    : null,
             "Settings"  : {
                 "EFIPartitionActive" : null,
-                "HasTPM2orHigher" : null,
+                "HasTPM" : null,
+                "LowestTPMVersion" : null,
                 "TPMStatusIsOk" : null,
                 "BitLockerInstalled" : null,
+                "BitLockerPinEnabled" : null,
                 "BitLockerOnOSVolume" : null,
-                "UACLevel": null,
+                "BitLockerOnDataVolumes" : null,
+                "LowestUACLevel": null,
                 "SpectreMeltdownIsHandled" : null,
                 "CPUFeatures" : {
                     "Feature1" : null
@@ -73,6 +78,7 @@
                 "ControlFlowGuardIsActive" : null,
                 "DataExcutionPreventionIsActive" : null,
                 "ForceImageRandomizationIsActive" : null,
+                "BottumUpASLRIsNotOff" : null,
                 "HighEntropyASLRIsActive" : null,
                 "ExceptionChainsSEHOPIsActive" : null,
                 "ValidateHeapIntegrityIsActive" : null
@@ -87,12 +93,12 @@
             "Settings"  : {
                 "AntiMalwareIsActive" : null,
                 "AntiSpywareIsActive" : null,
-                "AntiSpywareSignatureIsCurrent" : null,
+                "AntiSpywareSignatureMaxAge" : null,
                 "AnitVirusIsActive" : null,
-                "AnitVirusSignatureIsCurrent" : null,
+                "AnitVirusSignatureMaxAge" : null,
                 "BehaviorMonitoringIsActive" : null,
-                "LastFullScanIntervall" : null,
-                "LastQuickScanInterall" : null,
+                "LastFullScanMaxAge" : null,
+                "LastQuickScanMaxAge" : null,
                 "RealTimeProtectionIsActive" : null,
                 "TamperProtectionIsActive" : null
             }
@@ -128,14 +134,14 @@
             "Settings"  : {
                 "PowerShell7TelemetryIsDisabled" : null,
 
-                "VSCodeUsageDataIsDisabled" : null,
-                "VSCodeCrashReportsIsDisabled" : null,
-                "VSCodePluginGitLensUsageDataIsDisabled" : false,
+                "VSCodeUsageDataIsNotEnabled" : null,
+                "VSCodeCrashReportsIsNotEnabled" : null,
+                "VSCodePluginGitLensUsageDataIsDisabled" : null,
 
-                "WindowsDataCollectionIsDisabled" : false,
-                "MSCustomerExperienceImprovementProgramIsDisabled" : false,
-                "ConnectedUserExperiencesandTelemetryServiceIsDisabled" : false,
-                "ConnectedUserExperiencesandTelemetryServiceIsNotRunning" : false
+                "WindowsDataCollectionIsDisabled" : null,
+                "MSCustomerExperienceImprovementProgramIsDisabled" : null,
+                "ConnectedUserExperiencesandTelemetryServiceIsDisabled" : null,
+                "ConnectedUserExperiencesandTelemetryServiceIsNotRunning" : null
             }
         }
     }
