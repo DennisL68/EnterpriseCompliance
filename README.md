@@ -3,16 +3,16 @@
 ## 1. Description
 
 EnterpriseCompliance is a Pester v4 test that will show if your development rig is compliant with the 
-corporation you are involved with.
+corporation policies where you are working.
 
-Simply enter the values provided by the IT Security department in the settings file (feature not done yet) and run the test.
+Simply enter the values provided by the IT Security department (if they let you know) in the settings file (feature not done yet) and run the test.
 
 ## 2. Requirements
 
 The prerequisites for using the artifact of this repo is
 
 * A Windows Computer
-* PowerShell
+* Windows PowerShell
 * Pester 4.10.1
 * Module PSWindowsUpdate
 * Module PendingReboot 
@@ -26,7 +26,7 @@ The script can only test what the Pester script is handling. Feel free to add ad
 
 * `Install-Module EnterpriseCompliance` (not released to PS Gallery yet)
 * Install the prerequisites.
-* Create the settingsjson file complaiance.json in your `~`-folder. (future version)
+* Create the settings json file compliance.json in your `~`-folder. (future version)
 * `Invoke-Pester ...` as administrator.
 
 ## 5. References and links
