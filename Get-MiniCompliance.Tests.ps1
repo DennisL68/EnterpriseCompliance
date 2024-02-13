@@ -163,7 +163,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
 
                     $Today = Get-Date
 
-                    ($Today -lt [datetime]$Compliance.WindowsEoL.Settings.$Windows[1]) | Should -BeTrue
+                    ($Today -lt [datetime]$Compliance.WindowsEoL.EndDates.$Windows[1]) | Should -BeTrue
             }
 
         }
