@@ -3,8 +3,8 @@
         "WindowsEoL" : {
             "Active"    : null,
             "Settings"  : {
-                "Limit"     : null,
-                "Comment"   : "Avalable limits are EoL, LTS and Ext (if available)."
+                "Extended"  : null,
+                "Comment"   : "Extended will check for LTS and Ext instead (if available)."
             },
             "EndDates"  : {
                 "Windows Server 2016 1607" : ["14339", "2022-01-11", "01-01-01", "2027-01-11"],
