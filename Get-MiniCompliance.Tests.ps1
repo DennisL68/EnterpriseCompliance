@@ -101,6 +101,10 @@ function Get-FireWallRuleProperty {
 
 $Compliance = Get-Content .\compliance.json | ConvertFrom-Json
 
+if (Test-Path ~\compliance.json) {
+    $Compliance = Get-Content ~\compliance.json | ConvertFrom-Json
+}
+
 $ComplianceTypes =  $Compliance |
     Get-Member -MemberType Property,NoteProperty |
         select -ExpandProperty Name
