@@ -125,20 +125,38 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
 
             It 'Should not be product End of Life' {
 
-                    $WindowsInfo = Get-ComputerInfo | select OSName,
+                    # $WindowsInfo = Get-ComputerInfo | select OSName, #! Get-ComputerInfo is to slow :/
+                    # @{
+                    #     l = 'BuildNumber'
+                    #     e = {$_.WindowsBuildLabEx.Split('.')[0]}
+                    # },
+                    # @{
+                    #     l = 'Version'
+                    #     e = {
+                    #         if ($_.OSDisplayVersion) {$_.OSDisplayVersion}
+                    #         else {$_.WindowsVersion}
+                    #     }
+                    # }
+
+                    $WindowsInfo = Get-Item "HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion" | select @{
+                            l = 'OsName'
+                            e = {$_.GetValue("ProductName")}
+                    },
                     @{
                         l = 'BuildNumber'
-                        e = {$_.WindowsBuildLabEx.Split('.')[0]}
+                        e = {$_.GetValue("CurrentBuildNumber")}
                     },
                     @{
                         l = 'Version'
                         e = {
-                            if ($_.OSDisplayVersion) {$_.OSDisplayVersion}
-                            else {$_.WindowsVersion}
+                            if ($_.GetValue("ReleaseId")) {$_.GetValue("ReleaseID")}
+                            if ($_.GetValue("DisplayVersion")) {$_.GetValue("DisplayVersion")}
+                            if (! ($_.GetValue("ReleaseId") -or $_.GetValue("DisplayVersion")) ) {$_.GetValue("CurrentVersion")}
                         }
                     }
 
-                    $Windows = ($WindowsInfo.OSName -replace "^(\S+\s){1}|(\s\S+){1}$") + #Remove first and last word
+                    # $Windows = ($WindowsInfo.OSName -replace "^(\S+\s){1}|(\s\S+){1}$") + #Remove first and last word
+                    $Windows = ($WindowsInfo.OSName -replace "(\s\S+){1}$") + #Remove last word
                         ' ' +
                         $WindowsInfo.Version
                     write-host -ForegroundColor Yellow '      ' $Windows
