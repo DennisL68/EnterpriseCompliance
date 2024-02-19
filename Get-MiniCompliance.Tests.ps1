@@ -123,20 +123,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
     if ($Compliance.WindowsEoL.Active) {
         Context '- Check Windows version' {
 
-            It 'Should not be product End of Life' {
-
-                    # $WindowsInfo = Get-ComputerInfo | select OSName, #! Get-ComputerInfo is to slow :/
-                    # @{
-                    #     l = 'BuildNumber'
-                    #     e = {$_.WindowsBuildLabEx.Split('.')[0]}
-                    # },
-                    # @{
-                    #     l = 'Version'
-                    #     e = {
-                    #         if ($_.OSDisplayVersion) {$_.OSDisplayVersion}
-                    #         else {$_.WindowsVersion}
-                    #     }
-                    # }
+            It ('Should not be product End of Life' + ' (Ext)' * $Compliance.WindowsEoL.Settings.Extended) {
 
                     $WindowsInfo = Get-Item "HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion" | select @{
                             l = 'OsName'
@@ -155,7 +142,6 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                         }
                     }
 
-                    # $Windows = ($WindowsInfo.OSName -replace "^(\S+\s){1}|(\s\S+){1}$") + #Remove first and last word
                     $Windows = ($WindowsInfo.OSName -replace "(\s\S+){1}$") + #Remove last word
                         ' ' +
                         $WindowsInfo.Version
@@ -163,7 +149,13 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
 
                     $Today = Get-Date
 
-                    ($Today -lt [datetime]$Compliance.WindowsEoL.EndDates.$Windows[1]) | Should -BeTrue
+                    if ($Compliance.WindowsEoL.Settings.Extended) {
+                        $EndDate = [datetime]($Compliance.WindowsEoL.EndDates.$Windows[1..3] | Measure-Object -Maximum).Maximum
+                    } else {
+                        $EndDate = [datetime]$Compliance.WindowsEoL.EndDates.$Windows[1]
+                    }
+
+                    $Today -lt $EndDate | Should -BeTrue
             }
 
         }
