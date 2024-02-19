@@ -183,13 +183,15 @@ Describe '- Check Security Compliance' -Tag Security {
             $WULastResults = Get-WULastResults 3>$null #Hide default warning message
             $Today = Get-Date
 
-            It 'Should be recently updated' {
-                ($Today - $WULastResults.LastInstallationSuccessDate).TotalDays | Should -BeLessOrEqual 7
+            It "Should be updated during the last $($Compliance.WindowsUpdate.Settings.LastInstallMaxAge) days" {
+                [int]($Today - $WULastResults.LastInstallationSuccessDate).TotalDays |
+                    Should -BeLessOrEqual $Compliance.WindowsUpdate.Settings.LastInstallMaxAge
             }
 
-            It 'Should not need a reboot' {
+            It 'Should not have a pending reboot' {
                 if (($PSVersionTable.PSVersion | select Major,Minor) -like ([version]'5.1' | select Major,Minor)) {#only works with PoSH 5.1
-                    (Test-PendingReboot -SkipConfigurationManagerClientCheck).IsRebootPending | Should -Be $false
+                    (Test-PendingReboot -SkipConfigurationManagerClientCheck).IsRebootPending |
+                        Should -Be $Compliance.WindowsUpdate.Settings.HavePendingReboot
                 }
                 else {
                     Set-ItResult -Skipped -Because 'Test requires PoSH 5.1'

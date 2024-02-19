@@ -38,7 +38,8 @@
         "WindowsUpdate" :  {
             "Active"    : null,
             "Settings"  : {
-                "LastInstallMaxAge" : null
+                "LastInstallMaxAge" : null,
+                "HavePendingReboot"   : null
             }
         },
 
