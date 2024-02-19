@@ -52,7 +52,6 @@
                 "NotUsingBlankPassword" : null,
                 "RequireComplexPassword" : null,
                 "MinimumPasswordLength" : null,
-                "RecommendedPasswordLength" : null,
                 "LockOutScreenOn" : null,
                 "AutoSleepOn" : null
             }

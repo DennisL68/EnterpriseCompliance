@@ -219,39 +219,42 @@ Describe '- Check Security Compliance' -Tag Security {
                 remove-item $MyAppPath\sec_cfg.ini -Force
             }
 
-            It 'Should not be running Builtin Admin' {
-                ($BuiltinAdmin.SID -ne $MyAccount.SID) | Should -Be $true
+            It ('Should' + ' not' * $Compliance.UserAccount.Settings.IsNotBuiltInAdmin + ' be running as Builtin Admin') {
+                ($BuiltinAdmin.SID -ne $MyAccount.SID) |
+                    Should -Be $Compliance.UserAccount.Settings.IsNotBuiltInAdmin
             }
 
-            It 'Should not have Builtin Admin account enabled' {
-                $BuiltinAdmin.Enabled | Should -Be $false
+            It ('Should' + ' not' * $Compliance.UserAccount.Settings.BuiltInAdminDisabled + ' have Builtin Admin account enabled') {
+                -not $BuiltinAdmin.Enabled |
+                    Should -Be $Compliance.UserAccount.Settings.BuiltInAdminDisabled
             }
 
-            It 'Should not have blank passwords' {
-                #$TestPwd = ConvertTo-SecureString '' -AsPlainText -Force #! Does not work with empty strings
-                #$TestCred = New-Object -TypeName System.Management.Automation.PSCredential $MyAccount.Name, $TestPwd
-
+            It ('Should' + ' not' * $Compliance.UserAccount.Settings.NotUsingBlankPassword + ' have blank passwords') {
                 Add-Type -AssemblyName System.DirectoryServices.AccountManagement
                 $PrincipalObj = New-Object System.DirectoryServices.AccountManagement.PrincipalContext('machine',$Env:COMPUTERNAME)
 
-                $PrincipalObj.ValidateCredentials($MyAccount.'User Name','') | Should -Be $false
+                -not $PrincipalObj.ValidateCredentials($MyAccount.'User Name','') |
+                    Should -Be $Compliance.UserAccount.Settings.NotUsingBlankPassword
             }
 
-            It 'Should not use auto logon' {
+            It ('Should' + ' not' * $Compliance.UserAccount.Settings.AutoLogonDisabled + ' use auto logon') {
                 $AutoLogon = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').AutoAdminLogon
 
-                $AutoLogon | Should -Not -Be '1'
+                -not $AutoLogon -eq 1 |
+                    Should -Be $Compliance.UserAccount.Settings.AutoLogonDisabled
             }
 
-            It 'Should not store AutoLogon password in cleartext' {
+            It ('Should' + ' not' * $Compliance.UserAccount.Settings.AutoLogonDisabled + ' store AutoLogon password') {
                 $AutoLogonPwd = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').DefaultPassword
 
-                $AutoLogonPwd | Should -BeNullOrEmpty
+                [string]::IsNullOrEmpty($AutoLogonPwd) |
+                    Should -Be $Compliance.UserAccount.Settings.AutoLogonDisabled
             }
 
             if ($IsAdmin){
-                It 'Should require complex passwords' {
-                    $SecCfg.'System Access'.PasswordComplexity | Should -Be 1
+                It ('Should' + ' not' * !$Compliance.UserAccount.Settings.RequireComplexPassword + ' require complex passwords') {
+                    $SecCfg.'System Access'.PasswordComplexity -eq 1 |
+                        Should -Be $Compliance.UserAccount.Settings.RequireComplexPassword
                 }
             } else {
                 It 'Should require complex passwords' {
@@ -261,16 +264,11 @@ Describe '- Check Security Compliance' -Tag Security {
 
 
             if ($IsAdmin) {
-                It 'Should have password length policy of at least 8 characters' {
-                    [int]($SecCfg.'System Access'.MinimumPasswordLength) | Should -BeGreaterOrEqual 8
+                It "Should have password length policy of at least $($Compliance.UserAccount.Settings.MinimumPasswordLength) characters" {
+                    [int]($SecCfg.'System Access'.MinimumPasswordLength) |
+                        Should -BeGreaterOrEqual $Compliance.UserAccount.Settings.MinimumPasswordLength
+                    # Should -BeGreaterOrEqual 8
                 }
-            }
-
-            if ($IsAdmin -and [int]($SecCfg.'System Access'.MinimumPasswordLength) -lt 12) {
-                It 'Ought to have password length policy of at least 12 characters' {
-                    Set-ItResult -Skipped -Because 'not required (NOT compliant)'
-                }
-
             }
 
             if (!$IsAdmin){# skip password check
@@ -279,7 +277,7 @@ Describe '- Check Security Compliance' -Tag Security {
                 }
             }
 
-            It 'Should have lock out screen set' {#! Add Power & Sleep detection
+            It ('Should' + ' not' * !$Compliance.UserAccount.Settings.LockOutScreenOn + ' have lock out screen set') {#! Add Power & Sleep detection
                 [bool][int]$ScreenSaveActive = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaveActive
                 [bool][int]$ScreenSaverIsSecure = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaverIsSecure
 
@@ -289,12 +287,13 @@ Describe '- Check Security Compliance' -Tag Security {
                         $InactivityLimit = $InactivityLimit.split(',')[-1] #Only keep last part
                     }
 
-                    ($ScreenSaveActive -and $ScreenSaverIsSecure) -or $InactivityLimit -gt 0 | Should -Be $true
+                    ($ScreenSaveActive -and $ScreenSaverIsSecure) -or 
+                    $InactivityLimit -gt 0 |
+                        Should -Be $Compliance.UserAccount.Settings.LockOutScreenOn
                 }
 
                 if (!$IsAdmin -and !($ScreenSaveActive -and $ScreenSaverIsSecure)) {
-                    # Set-ItResult -Inconclusive -Because 'Test not run as admin'
-                    $IsAdmin | Should -Be $true -Because 'Test not run as admin'
+                    $IsAdmin | Should -Be $true -Because 'Check requires admin privileges'
                 }
             }
         }#end context Accounts
