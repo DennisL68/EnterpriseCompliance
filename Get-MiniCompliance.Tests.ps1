@@ -166,8 +166,8 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
         Context '- Check license information'{
 
             It 'Should be licensed' {
-                $License = Get-CimInstance SoftwareLicensingProduct -Filter "Name like 'Windows%'" |
-                where { $_.PartialProductKey } | select Description, LicenseStatus
+                $License = Get-CimInstance SoftwareLicensingProduct -Filter "PartialProductKey IS NOT NULL" |
+                where Name -like 'Windows*' | select Description, LicenseStatus
 
                 $License.LicenseStatus | Should -Be '1'
             }
