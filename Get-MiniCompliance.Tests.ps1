@@ -38,7 +38,7 @@ function ConvertFrom-IniFile ($file) {
 
 }# end function
 
-Function Get-UacLevel {
+function Get-UacLevel {
     $Uac = New-Object psobject |
         select EnableLUA, ConsentPromptBehaviorAdmin, PromptOnSecureDesktop, NotifyLevel, NotifyLevelVal
 
@@ -306,14 +306,24 @@ Describe '- Check Security Compliance' -Tag Security {
             if ($TpmDevice){#make sure we have a TPM before getting version
                 $TpmVersion = [version]$TpmDevice.FriendlyName.split(' ')[-1]
             }
+
             $BitLockerMod = Get-Module BitLocker -ListAvailable
+            
             if ($IsAdmin -and $BitLockerMod) {
                 $OsBitLockerVolume = Get-BitLockerVolume | where VolumeType -eq OperatingSystem
             }
-            $EfiPart = Get-Disk | where IsBoot | Get-Partition | where GptType -eq '{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}'
 
             It ('Should check for an EFI partition') {
-                ![string]::IsNullOrEmpty($EfiPart) | Should -Be $Compliance.Machine.Settings.EFIPartitionActive
+                if ($IsAdmin) {
+                    #$EfiPart = Get-Disk | where IsBoot | Get-Partition | where GptType -eq '{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}'
+                    #! Get-Disk sometimes doesn't get Dosk 0
+
+                    $EfiPart = bcdedit /enum BOOTMGR | select -Index 5 | where {$_ -like '*.efi'}
+                    ![string]::IsNullOrEmpty($EfiPart) | Should -Be $Compliance.Machine.Settings.EFIPartitionActive
+                }
+                if (!$IsAdmin) {
+                    Set-ItResult -Skipped -Because 'Check requires admin privileges'
+                }
             }
 
             It ('Should check for UEFI firmware Secure Boot') {
@@ -331,9 +341,9 @@ Describe '- Check Security Compliance' -Tag Security {
 
             It 'Should check TPM version' {
                 if ($TpmDevice.Present) {
-                    $TpmVersion.Major | Should -BeGreaterOrEqual $Compliance.Machine.Settings.LowestTPMVersion
+                    $TpmVersion -ge [version]$Compliance.Machine.Settings.LowestTPMVersion | Should -BeTrue 
                 }
-                if ($TpmDevice.Present) {
+                if (!$TpmDevice.Present) {
                     Set-ItResult -Skipped -Because 'Check requires TPM device'
                 }
             }
@@ -342,7 +352,7 @@ Describe '- Check Security Compliance' -Tag Security {
                 if ($TpmDevice.Present) {
                     $TpmDevice.Status -eq 'OK' | Should -Be $Compliance.Machine.Settings.TPMStatusIsOk
                 }
-                if ($TpmDevice.Present) {
+                if (!$TpmDevice.Present) {
                     Set-ItResult -Skipped -Because 'Check requires TPM device'
                 }
             }
@@ -353,23 +363,30 @@ Describe '- Check Security Compliance' -Tag Security {
 
             It 'Should check BitLocker activatation for OS Volume' {
                 if ($IsAdmin) {
-                    $OsBitLockerVolume.ProtectionStatus | Should -Be 'On'
+                    $OsBitLockerVolume.ProtectionStatus -eq 'On' | Should -Be $Compliance.Machine.Settings.BitLockerOnOSVolume
                 }
-                elseif (!$IsAdmin) {
-                    $IsAdmin | Should -Be $true -Because 'Check requires admin privileges and BitLocker'
+                if (!$IsAdmin) {
+                    $BootDrive = (Get-CimInstance Win32_Volume | where BootVolume).DriveLetter
+                    $OsBitLockerProtection = (New-Object -ComObject Shell.Application).NameSpace($BootDrive).Self.ExtendedProperty('System.Volume.BitLockerProtection')
+                    @(1, 3, 5) -contains $OsBitLockerProtection | Should -Be $Compliance.Machine.Settings.BitLockerOnOSVolume
                 }
+            }
+
+            It 'Should check BitLocker activatation for Data Volume' {
+                Set-ItResult -Skipped -Because 'Test not implemented yet'
+                # | Should -Be $Compliance.Machine.Settings.BitLockerOnDataVolumes
             }
 
             It 'Should check UAC level' {
                 $Uac = Get-UacLevel
-                $Uac.NotifyLevelVal | Should -BeGreaterOrEqual 2
+                $Uac.NotifyLevelVal | Should -BeGreaterOrEqual $Compliance.Machine.Settings.LowestUACLevel
             }
 
             It 'Should check actions for Spectre/Meltdown (https://support.microsoft.com/help/4074629)' {
                 $Speculation = Get-SpeculationControlSettings 6>&1 #Redirect info stream to Success stream
                 $SpecMessage = $Speculation.MessageData.Message
 
-                $SpecMessage | Should -Not -Contain 'Suggested actions'
+                -not $SpecMessage -Contains 'Suggested actions' | Should -Be $Compliance.Machine.Settings.SpectreMeltdownIsHandled
             }
 
             <#
