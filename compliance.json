@@ -61,6 +61,7 @@
             "Active"    : null,
             "Settings"  : {
                 "EFIPartitionActive" : null,
+                "UEFISecureBoot" : null,
                 "HasTPM" : null,
                 "LowestTPMVersion" : null,
                 "TPMStatusIsOk" : null,
@@ -98,8 +99,8 @@
                 "AntiMalwareIsActive" : null,
                 "AntiSpywareIsActive" : null,
                 "AntiSpywareSignatureMaxAge" : null,
-                "AnitVirusIsActive" : null,
-                "AnitVirusSignatureMaxAge" : null,
+                "AntiVirusIsActive" : null,
+                "AntiVirusSignatureMaxAge" : null,
                 "BehaviorMonitoringIsActive" : null,
                 "LastFullScanMaxAge" : null,
                 "LastQuickScanMaxAge" : null,

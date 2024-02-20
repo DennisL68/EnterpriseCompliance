@@ -219,17 +219,17 @@ Describe '- Check Security Compliance' -Tag Security {
                 remove-item $MyAppPath\sec_cfg.ini -Force
             }
 
-            It ('Should' + ' not' * $Compliance.UserAccount.Settings.IsNotBuiltInAdmin + ' be running as Builtin Admin') {
+            It ('Should check running as Builtin Admin') {
                 ($BuiltinAdmin.SID -ne $MyAccount.SID) |
                     Should -Be $Compliance.UserAccount.Settings.IsNotBuiltInAdmin
             }
 
-            It ('Should' + ' not' * $Compliance.UserAccount.Settings.BuiltInAdminDisabled + ' have Builtin Admin account enabled') {
+            It ('Should check Builtin Admin account being enabled') {
                 -not $BuiltinAdmin.Enabled |
                     Should -Be $Compliance.UserAccount.Settings.BuiltInAdminDisabled
             }
 
-            It ('Should' + ' not' * $Compliance.UserAccount.Settings.NotUsingBlankPassword + ' have blank passwords') {
+            It ('Should check using blank passwords') {
                 Add-Type -AssemblyName System.DirectoryServices.AccountManagement
                 $PrincipalObj = New-Object System.DirectoryServices.AccountManagement.PrincipalContext('machine',$Env:COMPUTERNAME)
 
@@ -237,14 +237,14 @@ Describe '- Check Security Compliance' -Tag Security {
                     Should -Be $Compliance.UserAccount.Settings.NotUsingBlankPassword
             }
 
-            It ('Should' + ' not' * $Compliance.UserAccount.Settings.AutoLogonDisabled + ' use auto logon') {
+            It ('Should check using Auto Logon') {
                 $AutoLogon = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').AutoAdminLogon
 
                 -not $AutoLogon -eq 1 |
                     Should -Be $Compliance.UserAccount.Settings.AutoLogonDisabled
             }
 
-            It ('Should' + ' not' * $Compliance.UserAccount.Settings.AutoLogonDisabled + ' store AutoLogon password') {
+            It ('Should check storing AutoLogon password') {
                 $AutoLogonPwd = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').DefaultPassword
 
                 [string]::IsNullOrEmpty($AutoLogonPwd) |
@@ -252,19 +252,19 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
             if ($IsAdmin){
-                It ('Should' + ' not' * !$Compliance.UserAccount.Settings.RequireComplexPassword + ' require complex passwords') {
+                It ('Should check complex password requirement') {
                     $SecCfg.'System Access'.PasswordComplexity -eq 1 |
                         Should -Be $Compliance.UserAccount.Settings.RequireComplexPassword
                 }
             } else {
-                It 'Should require complex passwords' {
+                It 'Should check complex password requirement' {
                     $IsAdmin | Should -Be $true -Because 'Check requires admin privileges'
                 }
             }
 
 
             if ($IsAdmin) {
-                It "Should have password length policy of at least $($Compliance.UserAccount.Settings.MinimumPasswordLength) characters" {
+                It "Should check password length policy setting" {
                     [int]($SecCfg.'System Access'.MinimumPasswordLength) |
                         Should -BeGreaterOrEqual $Compliance.UserAccount.Settings.MinimumPasswordLength
                     # Should -BeGreaterOrEqual 8
@@ -272,12 +272,12 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
             if (!$IsAdmin){# skip password check
-                It 'Should have password length policy' {
+                It 'Should check password length policy setting' {
                     $IsAdmin | Should -Be $true -Because 'Check requires admin privileges'
                 }
             }
 
-            It ('Should' + ' not' * !$Compliance.UserAccount.Settings.LockOutScreenOn + ' have lock out screen set') {#! Add Power & Sleep detection
+            It ('Should check lock out screen seting') {#! Add Power & Sleep detection
                 [bool][int]$ScreenSaveActive = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaveActive
                 [bool][int]$ScreenSaverIsSecure = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaverIsSecure
 
@@ -312,44 +312,46 @@ Describe '- Check Security Compliance' -Tag Security {
             }
             $EfiPart = Get-Disk | where IsBoot | Get-Partition | where GptType -eq '{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}'
 
-            It 'Ought to have EFI partition'{
-                If ($EfiPart -eq $null) {
-                    Set-ItResult -Skipped -Because 'not required (NOT compliant)'
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                }
+            It ('Should check for an EFI partition') {
+                ![string]::IsNullOrEmpty($EfiPart) | Should -Be $Compliance.Machine.Settings.EFIPartitionActive
             }
 
-            if ($EfiPart -ne $null) {#ok to test for UEFI settings
-                It 'Ought to have UEFI Secure boot' {
-                    if ($IsAdmin -and (Confirm-SecureBootUEFI)){
-                        Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                    }
-
-                    if ($IsAdmin -and !(Confirm-SecureBootUEFI)){
-                        Set-ItResult -Skipped -Because 'not required (NOT compliant)'
-                    }
-
-                    if (!$IsAdmin) {
-                        Set-ItResult -Skipped -Because 'Check requires admin privileges'
-                    }
+            It ('Should check for UEFI firmware Secure Boot') {
+                If ($IsAdmin) {
+                    Confirm-SecureBootUEFI | Should -Be $Compliance.Machine.Settings.UEFISecureBoot
+                }
+                if (!$IsAdmin) {
+                    Set-ItResult -Skipped -Because 'Check requires admin privileges'
                 }
             }
 
-            It 'Should have TPM 2.0 or greater' {
-                $TpmVersion.Major | Should -BeGreaterOrEqual 2
+            It 'Should check for TPM' {
+                $TpmDevice.Present | Should -Be $Compliance.Machine.Settings.HasTPM
             }
 
-            It 'Should have TPM status - OK' {
-                $TpmDevice.Status | Should -Be 'OK'
+            It 'Should check TPM version' {
+                if ($TpmDevice.Present) {
+                    $TpmVersion.Major | Should -BeGreaterOrEqual $Compliance.Machine.Settings.LowestTPMVersion
+                }
+                if ($TpmDevice.Present) {
+                    Set-ItResult -Skipped -Because 'Check requires TPM device'
+                }
             }
 
-            It 'Should have Bitlocker Feature installed' {
-                $BitLockerMod.Name -eq 'BitLocker' | Should -Be $true
+            It 'Should check TPM status' {
+                if ($TpmDevice.Present) {
+                    $TpmDevice.Status -eq 'OK' | Should -Be $Compliance.Machine.Settings.TPMStatusIsOk
+                }
+                if ($TpmDevice.Present) {
+                    Set-ItResult -Skipped -Because 'Check requires TPM device'
+                }
             }
 
-            It 'Should have BitLocker activated on OS Volume' {
+            It 'Should check Bitlocker Feature installation status' {
+                $BitLockerMod.Name -eq 'BitLocker' | Should -Be $Compliance.Machine.Settings.BitLockerInstalled
+            }
+
+            It 'Should check BitLocker activatation for OS Volume' {
                 if ($IsAdmin) {
                     $OsBitLockerVolume.ProtectionStatus | Should -Be 'On'
                 }
@@ -358,12 +360,12 @@ Describe '- Check Security Compliance' -Tag Security {
                 }
             }
 
-            It 'Should have UAC set to default or higer' {
+            It 'Should check UAC level' {
                 $Uac = Get-UacLevel
                 $Uac.NotifyLevelVal | Should -BeGreaterOrEqual 2
             }
 
-            It 'Should not require actions for Spectre/Meltdown (https://support.microsoft.com/help/4074629)' {
+            It 'Should check actions for Spectre/Meltdown (https://support.microsoft.com/help/4074629)' {
                 $Speculation = Get-SpeculationControlSettings 6>&1 #Redirect info stream to Success stream
                 $SpecMessage = $Speculation.MessageData.Message
 
@@ -385,43 +387,43 @@ Describe '- Check Security Compliance' -Tag Security {
 
             $ExploitProt = Get-ProcessMitigation -System
 
-            It 'Should have Control Flow Guard (CFG) set to default (On)'{
+            It 'Should check Control Flow Guard (CFG)'{
                 $ExploitProt.CFG.Enable -eq 'NOTSET' -or  $ExploitProt.CFG.Enable -eq 'Enable' -and
                 $ExploitProt.CFG.SuppressExports -eq 'NOTSET' -or  $ExploitProt.CFG.SuppressExports -eq 'Enable' -and
                 $ExploitProt.CFG.StrictControlFlowGuard -eq 'NOTSET' -or  $ExploitProt.CFG.StrictControlFlowGuard -eq 'Enable' |
                     Should -Be $true
             }
 
-            It 'Should have Data Excution Prevention (DEP) set to default (On)' {
+            It 'Should check Data Excution Prevention (DEP)' {
                 $ExploitProt.DEP.Enable -eq 'NOTSET' -or  $ExploitProt.DEP.Enable -eq 'Enable' -and
                 $ExploitProt.DEP.EmulateAtlThunks -eq 'NOTSET' -or  $ExploitProt.DEP.EmulateAtlThunks -eq 'Enable' |
                     Should -Be $true
             }
 
-            It 'Should have Force Randomization for Images (Mandatory ASLR) set to at least default (Off)' {
+            It 'Should check Force Randomization for Images (Mandatory ASLR)' {
                 $ExploitProt.ASLR.ForceRelocateImages -eq 'NOTSET' -or
                 $ExploitProt.ASLR.ForceRelocateImages -eq 'ON' -or
                 $ExploitProt.ASLR.ForceRelocateImages -eq 'OFF' |
                     Should -Be $true
             }
 
-            It 'Should have Randomize memory allocations (Bottom-up ASLR) set to default (On)' {
+            It 'Should check Randomize memory allocations (Bottom-up ASLR)' {
                 $ExploitProt.ASLR.BottomUp -eq 'NOTSET' -or  $ExploitProt.ASLR.BottomUp -eq 'Enable' |
                     Should -Be $true
             }
 
-            It 'Should have High-Entropy ASLR set to deault (On)' {
+            It 'Should check High-Entropy ASLR' {
                 $ExploitProt.ASLR.HighEntropy -eq 'NOTSET' -or  $ExploitProt.ASLR.HighEntropy -eq 'Enable' |
                     Should -Be $true
             }
 
-            It 'Should Validate Exception Chains (SEHOP) set to default (On)' {
+            It 'Should check Exception Chains (SEHOP)' {
                 $ExploitProt.SEHOP.Enable -eq 'NOTSET' -or  $ExploitProt.SEHOP.Enable -eq 'Enable' -and
                 $ExploitProt.SEHOP.TelemetryOnly -eq 'NOTSET' -or  $ExploitProt.SEHOP.TelemetryOnly -eq 'Enable' |
                     Should -Be $true
             }
 
-            It 'Should have Validate Heap Integrity set to default (On)' {
+            It 'Should check Validate Heap Integrity' {
                 $ExploitProt.Heap.TerminateOnError -eq 'NOTSET' -or  $ExploitProt.Heap.TerminateOnError -eq 'Enable' |
                     Should -Be $true
             }
@@ -433,31 +435,31 @@ Describe '- Check Security Compliance' -Tag Security {
 
             $MpStatus = Get-MpComputerStatus
 
-            It 'Should have AntiMalware enabled' {
+            It 'Should check AntiMalware enabled' {
                 $MpStatus.AMServiceEnabled | Should -Be $true
             }
 
-            It 'Should have AntiSpyware enabled' {
+            It 'Should check AntiSpyware enabled' {
                 $MpStatus.AntispywareEnabled | Should -Be $true
             }
 
-            It 'Should have current AntiSpyware signature' {
+            It 'Should check current AntiSpyware signature' {
                 $MpStatus.AntispywareSignatureAge | Should -BeLessOrEqual 7
             }
 
-            It 'Should have AnitVirus enabled' {
+            It 'Should check AnitVirus enabled' {
                 $MpStatus.AntivirusEnabled | Should -Be $true
             }
 
-            It 'Shoud have current AntiVirusSignature' {
+            It 'Shoud check current AntiVirusSignature' {
                 $MpStatus.AntivirusSignatureAge | Should -BeLessOrEqual 7
             }
 
-            It 'Should have Behavior monitoring enabled' {
+            It 'Should check Behavior monitoring enabled' {
                 $MpStatus.BehaviorMonitorEnabled | Should -Be $true
             }
 
-            It 'Ought to be recently fulled scanned' {
+            It 'Should check fully scanned timeframe' {
                 if ($MpStatus.FullScanAge -le 32) {
                     Set-ItResult -Skipped -Because 'not required (COMPLIANT, scanned last 32 days)'
                 }
@@ -466,15 +468,15 @@ Describe '- Check Security Compliance' -Tag Security {
                 }
             }
 
-            It 'Should be recently quicked scanned' {
+            It 'Should check quicked scanned timeframe' {
                 $MpStatus.QuickScanAge | Should -BeLessOrEqual 7
             }
 
-            It 'Should be realtime protected' {
+            It 'Should check Realtime Protecteion' {
                 $MpStatus.RealTimeProtectionEnabled | Should -Be $true
             }
 
-            It 'May be Tamper Protected' {
+            It 'Should check Tamper Protection' {
                 If ($MpStatus.IsTamperProtected) {
                     Set-ItResult -Skipped -Because 'not required'
                 }
@@ -507,25 +509,25 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
 
-            It 'Should have FireWall enabled' {
+            It 'Should check FireWall enabled status' {
                 $MpsSvc.StartType | Should -Be 'Automatic'
             }
 
-            It 'Should have Firewall running' {
+            It 'Should check Firewall running status' {
                 $MpsSvc.Status | Should -Be 'Running'
             }
 
-            It 'Should be turned on for Private networks' {
+            It 'Should check Firewall status for Private networks' {
                 ($FirewallProfile | where Name -like 'Private').Enabled | Should -Be $true
             }
 
-            It 'Should have Firewall rules in Private networks' {
+            It 'Should check Firewall rules existence in Private networks' {
                 ($FirewallRule | where Profile -like 'Private').Count | Should -BeGreaterThan 1
 
             }
 
 
-            It 'Ought not to have an "allow all" for Private networks' {
+            It 'Should check for "allow all" rules for Private networks' {
                 if ($IsAdmin){
                     if (($FirewallRule | where {
                         $_.Profile -eq 'Private' -and
@@ -545,16 +547,16 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
 
-            It 'Should be turned on for Public networks' {
+            It 'Should check Firewall status for Public networks' {
                 ($FirewallProfile | where Name -like 'Public').Enabled | Should -Be $true
             }
 
-            It 'Should have Firewall rules in Public networks' {
+            It 'Should check Firewall rules existence in Public networks' {
                 ($FirewallRule | where Profile -like 'Public').Count | Should -BeGreaterThan 1
 
             }
 
-            It 'Should NOT have an "allow all rule" for Public networks' {
+            It 'Should check for "allow all" rules for Public networks' {
                 if ($IsAdmin){
                     ($FirewallRule | where {
                         $_.Profile -eq 'Public' -and
@@ -568,16 +570,16 @@ Describe '- Check Security Compliance' -Tag Security {
                 }
             }
 
-            It 'Should be turned on for Domain networks' {
+            It 'Should check Firewall status for Domain networks' {
                 ($FirewallProfile | where Name -like 'Domain').Enabled | Should -Be $true
             }
 
-            It 'Should have Firewall rules in Domain networks' {
+            It 'Should check Firewall rules existence in Domain networks' {
                 ($FirewallRule | where Profile -like 'Domain').Count | Should -BeGreaterThan 1
 
             }
 
-            It 'Ought not to have an "allow all rule" for Domain networks' {
+            It 'Should check for "allow all rule" for Domain networks' {
                 if ($IsAdmin){
                     if (($FirewallRule | where {
                         $_.Profile -eq 'Domain' -and
@@ -616,7 +618,7 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
 
             Context '- Get PowerShell Telemetry' {
 
-                It 'Should not send Telemetry for PoSH 7.x' {
+                It 'Should check for for PoSH 7.x Telemetry' {
                     $ENV:POWERSHELL_TELEMETRY_OPTOUT | Should -Not -BeNullOrEmpty
                 }
 
@@ -635,11 +637,11 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
                 $MyAppPath = [Environment]::GetFolderPath('ApplicationData')
                 $CodeSettings = get-content $MyAppPath\code\user\settings.json -ErrorAction SilentlyContinue | ConvertFrom-Json
 
-                It 'Should not send VS Code Usage data'{
+                It 'Should check for VS Code Usage data'{
                     $CodeSettings.'telemetry.enableTelemetry' | Should -Be 'False'
                 }
 
-                It 'Should not send VS Code Crash reports' {
+                It 'Should check for VS Code Crash reports' {
                     $CodeSettings.'telemetry.enableCrashReporter' | Should -Be 'False'
                 }
 
@@ -654,7 +656,7 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
 
         Context '- Get Windows Telemetry' {
 
-            It 'Should not send Windows Data collections'{
+            It 'Should check for Windows Data collections Telemetry'{
                 if ((Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection).AllowTelemetry -eq 0){
                     Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
                 }
@@ -663,7 +665,7 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
                 }
             }
 
-            It 'Should not send MS Customer Experience Improvement Program'{
+            It 'Should check for MS Customer Experience Improvement Program Telemetry'{
                 if ((Get-ItemProperty HKLM:Software\Policies\Microsoft\SQMClient\Windows -ErrorAction SilentlyContinue).CEIPEnable -eq 0){
                     Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
                 }
@@ -672,7 +674,7 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
                 }
             }
 
-            It 'Should not have Connected User Experiences and Telemetry running' {
+            It 'Should check for Connected User Experiences and Telemetry running' {
                 if ((Get-Service DiagTrack).Status -eq 'Stopped'){
                     Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
                 }
@@ -708,13 +710,13 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
 
     Some tests require admin permissions to be perfomed.
 
-    Make sure to configure the compliance.json file before running the test.
+    Make sure to configure the compliance.json file before running the test and store it in ~.
 
 .EXAMPLE
-  .\Get-MiniCompliance.Tests.ps1
+    .\Get-MiniCompliance.Tests.ps1
 
 .EXAMPLE
-  Invoke-Pester .\Get-MiniComplance.Tests.ps1
+    Invoke-Pester .\Get-MiniComplance.Tests.ps1
 
 .NOTES
 #>
