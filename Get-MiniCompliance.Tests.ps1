@@ -277,7 +277,7 @@ Describe '- Check Security Compliance' -Tag Security {
                 }
             }
 
-            It ('Should check lock out screen seting') {#! Add Power & Sleep detection
+            It ('Should check lock out screen setting') {#! Add Power & Sleep detection
                 [bool][int]$ScreenSaveActive = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaveActive
                 [bool][int]$ScreenSaverIsSecure = (Get-ItemProperty 'HKCU:\Control Panel\Desktop').ScreenSaverIsSecure
 
@@ -316,7 +316,7 @@ Describe '- Check Security Compliance' -Tag Security {
             It ('Should check for an EFI partition') {
                 if ($IsAdmin) {
                     #$EfiPart = Get-Disk | where IsBoot | Get-Partition | where GptType -eq '{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}'
-                    #! Get-Disk sometimes doesn't get Dosk 0
+                    #! Get-Disk doesn't work with Dynamic disks
 
                     $EfiPart = bcdedit /enum BOOTMGR | select -Index 5 | where {$_ -like '*.efi'}
                     ![string]::IsNullOrEmpty($EfiPart) | Should -Be $Compliance.Machine.Settings.EFIPartitionActive
