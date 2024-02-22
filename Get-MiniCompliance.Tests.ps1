@@ -287,7 +287,7 @@ Describe '- Check Security Compliance' -Tag Security {
                         $InactivityLimit = $InactivityLimit.split(',')[-1] #Only keep last part
                     }
 
-                    ($ScreenSaveActive -and $ScreenSaverIsSecure) -or 
+                    ($ScreenSaveActive -and $ScreenSaverIsSecure) -or
                     $InactivityLimit -gt 0 |
                         Should -Be $Compliance.UserAccount.Settings.LockOutScreenOn
                 }
@@ -308,7 +308,7 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
             $BitLockerMod = Get-Module BitLocker -ListAvailable
-            
+
             if ($IsAdmin -and $BitLockerMod) {
                 $OsBitLockerVolume = Get-BitLockerVolume | where VolumeType -eq OperatingSystem
             }
@@ -341,7 +341,7 @@ Describe '- Check Security Compliance' -Tag Security {
 
             It 'Should check TPM version' {
                 if ($TpmDevice.Present) {
-                    $TpmVersion -ge [version]$Compliance.Machine.Settings.LowestTPMVersion | Should -BeTrue 
+                    $TpmVersion -ge [version]$Compliance.Machine.Settings.LowestTPMVersion | Should -BeTrue
                 }
                 if (!$TpmDevice.Present) {
                     Set-ItResult -Skipped -Because 'Check requires TPM device'
@@ -363,7 +363,9 @@ Describe '- Check Security Compliance' -Tag Security {
 
             It 'Should check BitLocker activatation for OS Volume' {
                 if ($IsAdmin) {
-                    $OsBitLockerVolume.ProtectionStatus -eq 'On' | Should -Be $Compliance.Machine.Settings.BitLockerOnOSVolume
+                    $OsBitLockerVolume.ProtectionStatus -eq 'On' -and
+                    $OsBitLockerVolume.KeyProtector.KeyProtectorType -contains 'TPM' |
+                        Should -Be $Compliance.Machine.Settings.BitLockerOnOSVolume
                 }
                 if (!$IsAdmin) {
                     $BootDrive = (Get-CimInstance Win32_Volume | where BootVolume).DriveLetter
@@ -375,6 +377,16 @@ Describe '- Check Security Compliance' -Tag Security {
             It 'Should check BitLocker activatation for Data Volume' {
                 Set-ItResult -Skipped -Because 'Test not implemented yet'
                 # | Should -Be $Compliance.Machine.Settings.BitLockerOnDataVolumes
+            }
+
+            It 'Should check BitLocker PIN' {
+                if (
+                    $IsAdmin -and
+                    $OsBitLockerVolume.ProtectionStatus -eq 'On'
+                ) {
+                    $OsBitLockerVolume.KeyProtector.KeyProtectorType -contains 'TpmPin' |
+                        Should -Be $Compliance.Machine.Settings.BitLockerPinEnabled
+                }
             }
 
             It 'Should check UAC level' {
