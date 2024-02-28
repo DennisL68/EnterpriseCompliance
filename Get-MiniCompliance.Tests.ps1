@@ -97,6 +97,33 @@ function Get-FireWallRuleProperty {
 
 }
 
+function Check {# $true, $null, $false
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, Position=0)]
+        [Alias('If')]
+        $Data,
+
+        [Parameter(Position=1)]
+        [Alias('IsLessOrEqualTo')]
+        $IsCompliantWith
+    )
+
+    $Compliant = $ComplianceValue = $IsCompliantWith
+
+    if ([string]::IsNullOrEmpty($IsCompliantWith)) {
+        Set-ItResult -Skipped -Because 'Test not enabled'
+    }
+    elseif (!$ComplianceValue -and $ComplianceValue -is [bool]) {
+        Set-ItResult -Skipped -Because 'Test not required'
+    }
+    elseif ($ComplianceValue -is [int]) {
+        $Data | Should -BeLessOrEqual $ComplianceValue
+    }
+    else {
+        $Data | Should -Be $Compliant
+    }
+}
 #endregion functions
 
 $Compliance = Get-Content .\compliance.json | ConvertFrom-Json
@@ -417,130 +444,111 @@ Describe '- Check Security Compliance' -Tag Security {
             $ExploitProt = Get-ProcessMitigation -System
 
             It 'Should check Control Flow Guard (CFG)'{
-                if ($Compliance.ExploitProtection.Settings.ControlFlowGuardIsActive) {
+                Check -If (
                     $ExploitProt.CFG.Enable -eq 'NOTSET' -or  $ExploitProt.CFG.Enable -eq 'Enable' -and
                     $ExploitProt.CFG.SuppressExports -eq 'NOTSET' -or  $ExploitProt.CFG.SuppressExports -eq 'Enable' -and
-                    $ExploitProt.CFG.StrictControlFlowGuard -eq 'NOTSET' -or  $ExploitProt.CFG.StrictControlFlowGuard -eq 'Enable' |
-                        Should -Be $true
-                } else {
-                    Set-ItResult -Skipped -Because 'Test not enabled'
-                }
+                    $ExploitProt.CFG.StrictControlFlowGuard -eq 'NOTSET' -or  $ExploitProt.CFG.StrictControlFlowGuard -eq 'Enable'
+                ) -IsCompliantWith $Compliance.ExploitProtection.Settings.ControlFlowGuardIsActive
             }
 
             It 'Should check Data Excution Prevention (DEP)' {
-                if ($Compliance.ExploitProtection.Settings.DataExcutionPreventionIsActive) {
+                Check -If (
                     $ExploitProt.DEP.Enable -eq 'NOTSET' -or  $ExploitProt.DEP.Enable -eq 'Enable' -and
-                    $ExploitProt.DEP.EmulateAtlThunks -eq 'NOTSET' -or  $ExploitProt.DEP.EmulateAtlThunks -eq 'Enable' |
-                        Should -Be $true
-                } else {
-                    Set-ItResult -Skipped -Because 'Test not enabled'
-                }
+                    $ExploitProt.DEP.EmulateAtlThunks -eq 'NOTSET' -or  $ExploitProt.DEP.EmulateAtlThunks -eq 'Enable'
+                ) -IsCompliantWith $Compliance.ExploitProtection.Settings.DataExcutionPreventionIsActive
             }
 
             It 'Should check Force Randomization for Images (Mandatory ASLR)' {
-                if ($Compliance.ExploitProtection.Settings.ForceImageRandomizationIsActive) {
+                Check -If (
                     $ExploitProt.ASLR.ForceRelocateImages -eq 'NOTSET' -or
                     $ExploitProt.ASLR.ForceRelocateImages -eq 'ON' -or
-                    $ExploitProt.ASLR.ForceRelocateImages -eq 'OFF' |
-                        Should -Be $true
-                } else {
-                    Set-ItResult -Skipped -Because 'Test not enabled'
-                }
+                    $ExploitProt.ASLR.ForceRelocateImages -eq 'OFF'
+                ) -IsCompliantWith $Compliance.ExploitProtection.Settings.ForceImageRandomizationIsActive
             }
 
             It 'Should check Randomize memory allocations (Bottom-up ASLR)' {
-                if ($Compliance.ExploitProtection.Settings.BottumUpASLRIsNotOff) {
-                    $ExploitProt.ASLR.BottomUp -eq 'NOTSET' -or  $ExploitProt.ASLR.BottomUp -eq 'Enable' |
-                        Should -Be $true
-                } else {
-                    Set-ItResult -Skipped -Because 'Test not enabled'
-                }
+                Check -If (
+                    $ExploitProt.ASLR.BottomUp -eq 'NOTSET' -or
+                    $ExploitProt.ASLR.BottomUp -eq 'Enable'
+                ) -IsCompliantWith $Compliance.ExploitProtection.Settings.BottumUpASLRIsNotOff
             }
 
             It 'Should check High-Entropy ASLR' {
-                if ($Compliance.ExploitProtection.Settings.HighEntropyASLRIsActive) {
-                    $ExploitProt.ASLR.HighEntropy -eq 'NOTSET' -or  $ExploitProt.ASLR.HighEntropy -eq 'Enable' |
-                        Should -Be $true
-                } else {
-                    Set-ItResult -Skipped -Because 'Test not enabled'
-                }
+                Check -If (
+                    $ExploitProt.ASLR.HighEntropy -eq 'NOTSET' -or
+                    $ExploitProt.ASLR.HighEntropy -eq 'Enable'
+                ) -IsCompliantWith $Compliance.ExploitProtection.Settings.HighEntropyASLRIsActive
             }
 
             It 'Should check Exception Chains (SEHOP)' {
-                if ($Compliance.ExploitProtection.Settings.ExceptionChainsSEHOPIsActive) {
+                Check -If (
                     $ExploitProt.SEHOP.Enable -eq 'NOTSET' -or  $ExploitProt.SEHOP.Enable -eq 'Enable' -and
-                    $ExploitProt.SEHOP.TelemetryOnly -eq 'NOTSET' -or  $ExploitProt.SEHOP.TelemetryOnly -eq 'Enable' |
-                        Should -Be $true
-                } else {
-                    Set-ItResult -Skipped -Because 'Test not enabled'
-                }
+                    $ExploitProt.SEHOP.TelemetryOnly -eq 'NOTSET' -or  $ExploitProt.SEHOP.TelemetryOnly -eq 'Enable'
+                ) -IsCompliantWith $Compliance.ExploitProtection.Settings.ExceptionChainsSEHOPIsActive
             }
 
             It 'Should check Validate Heap Integrity' {
-                if ($Compliance.ExploitProtection.Settings.ValidateHeapIntegrityIsActive) {
-                    $ExploitProt.Heap.TerminateOnError -eq 'NOTSET' -or  $ExploitProt.Heap.TerminateOnError -eq 'Enable' |
-                        Should -Be $true
-                } else {
-                    Set-ItResult -Skipped -Because 'Test not enabled'
-                }
+                Check -If (
+                    $ExploitProt.Heap.TerminateOnError -eq 'NOTSET' -or
+                    $ExploitProt.Heap.TerminateOnError -eq 'Enable'
+                ) -IsCompliantWith $Compliance.ExploitProtection.Settings.ValidateHeapIntegrityIsActive
             }
         }#end context exploit
     }
 
-    if ($Compliance.WinddowsDefender.Active) {
+    if ($Compliance.WindowsDefender.Active) {
         Context '- Get Windows Defender status' {
 
             $MpStatus = Get-MpComputerStatus
 
-            It 'Should check AntiMalware enabled' {
-                $MpStatus.AMServiceEnabled | Should -Be $true
+            It 'Should check AntiMalware status' {
+                Check -If $MpStatus.AMServiceEnabled `
+                    -IsCompliantWith $Compliance.WindowsDefender.Settings.AntiMalwareIsActive
             }
 
-            It 'Should check AntiSpyware enabled' {
-                $MpStatus.AntispywareEnabled | Should -Be $true
+            It 'Should check AntiSpyware status' {
+                Check -If $MpStatus.AntispywareEnabled `
+                    -IsCompliantWith $Compliance.WindowsDefender.Settings.AntiSpywareIsActive
             }
 
-            It 'Should check current AntiSpyware signature' {
-                $MpStatus.AntispywareSignatureAge | Should -BeLessOrEqual 7
+            It 'Should check current AntiSpyware signature age' {
+                Check -If $MpStatus.AntispywareSignatureAge `
+                    -IsLessOrEqualTo $Compliance.WindowsDefender.Settings.AntiSpywareSignatureMaxAge
             }
 
-            It 'Should check AnitVirus enabled' {
-                $MpStatus.AntivirusEnabled | Should -Be $true
+            It 'Should check AnitVirus status' {
+                Check -If $MpStatus.AntivirusEnabled `
+                    -IsCompliantWith $Compliance.WindowsDefender.Settings.AntiVirusIsActive
             }
 
-            It 'Shoud check current AntiVirusSignature' {
-                $MpStatus.AntivirusSignatureAge | Should -BeLessOrEqual 7
+            It 'Shoud check current AntiVirusSignature age' {
+                Check -If $MpStatus.AntivirusSignatureAge `
+                    -IsLessOrEqualTo $Compliance.WindowsDefender.Settings.AntiVirusSignatureMaxAge
             }
 
-            It 'Should check Behavior monitoring enabled' {
-                $MpStatus.BehaviorMonitorEnabled | Should -Be $true
+            It 'Should check Behavior monitoring status' {
+                Check -If $MpStatus.BehaviorMonitorEnabled `
+                    -IsCompliantWith $Compliance.WindowsDefender.Settings.BehaviorMonitoringIsActive
             }
 
             It 'Should check fully scanned timeframe' {
-                if ($MpStatus.FullScanAge -le 32) {
-                    Set-ItResult -Skipped -Because 'not required (COMPLIANT, scanned last 32 days)'
-                }
-                if ($MpStatus.FullScanAge -gt 32) {
-                    Set-ItResult -Skipped -Because 'not required (NOT compliant, not scanned last 32 days)'
-                }
+                Check -If $MpStatus.FullScanAge `
+                    -IsLessOrEqualTo $Compliance.WindowsDefender.Settings.LastFullScanMaxAge
             }
 
             It 'Should check quicked scanned timeframe' {
-                $MpStatus.QuickScanAge | Should -BeLessOrEqual 7
+                Check -If $MpStatus.QuickScanAge `
+                    -IsLessOrEqualTo $Compliance.WindowsDefender.Settings.LastQuickScanMaxAge
             }
 
-            It 'Should check Realtime Protecteion' {
-                $MpStatus.RealTimeProtectionEnabled | Should -Be $true
+            It 'Should check Realtime Protecteion status' {
+                Check -If $MpStatus.RealTimeProtectionEnabled `
+                    -IsCompliantWith $Compliance.WindowsDefender.Settings.RealTimeProtectionIsActive
             }
 
-            It 'Should check Tamper Protection' {
-                If ($MpStatus.IsTamperProtected) {
-                    Set-ItResult -Skipped -Because 'not required'
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'not required'
-                }
-
+            It 'Should check Tamper Protection status' {
+                Check -If $MpStatus.IsTamperProtected `
+                    -IsCompliantWith $Compliance.WindowsDefender.Settings.TamperProtectionIsActive
             }
         }# end context Windows Defender
     }
