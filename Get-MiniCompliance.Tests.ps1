@@ -417,44 +417,72 @@ Describe '- Check Security Compliance' -Tag Security {
             $ExploitProt = Get-ProcessMitigation -System
 
             It 'Should check Control Flow Guard (CFG)'{
-                $ExploitProt.CFG.Enable -eq 'NOTSET' -or  $ExploitProt.CFG.Enable -eq 'Enable' -and
-                $ExploitProt.CFG.SuppressExports -eq 'NOTSET' -or  $ExploitProt.CFG.SuppressExports -eq 'Enable' -and
-                $ExploitProt.CFG.StrictControlFlowGuard -eq 'NOTSET' -or  $ExploitProt.CFG.StrictControlFlowGuard -eq 'Enable' |
-                    Should -Be $true
+                if ($Compliance.ExploitProtection.Settings.ControlFlowGuardIsActive) {
+                    $ExploitProt.CFG.Enable -eq 'NOTSET' -or  $ExploitProt.CFG.Enable -eq 'Enable' -and
+                    $ExploitProt.CFG.SuppressExports -eq 'NOTSET' -or  $ExploitProt.CFG.SuppressExports -eq 'Enable' -and
+                    $ExploitProt.CFG.StrictControlFlowGuard -eq 'NOTSET' -or  $ExploitProt.CFG.StrictControlFlowGuard -eq 'Enable' |
+                        Should -Be $true
+                } else {
+                    Set-ItResult -Skipped -Because 'Test not enabled'
+                }
             }
 
             It 'Should check Data Excution Prevention (DEP)' {
-                $ExploitProt.DEP.Enable -eq 'NOTSET' -or  $ExploitProt.DEP.Enable -eq 'Enable' -and
-                $ExploitProt.DEP.EmulateAtlThunks -eq 'NOTSET' -or  $ExploitProt.DEP.EmulateAtlThunks -eq 'Enable' |
-                    Should -Be $true
+                if ($Compliance.ExploitProtection.Settings.DataExcutionPreventionIsActive) {
+                    $ExploitProt.DEP.Enable -eq 'NOTSET' -or  $ExploitProt.DEP.Enable -eq 'Enable' -and
+                    $ExploitProt.DEP.EmulateAtlThunks -eq 'NOTSET' -or  $ExploitProt.DEP.EmulateAtlThunks -eq 'Enable' |
+                        Should -Be $true
+                } else {
+                    Set-ItResult -Skipped -Because 'Test not enabled'
+                }
             }
 
             It 'Should check Force Randomization for Images (Mandatory ASLR)' {
-                $ExploitProt.ASLR.ForceRelocateImages -eq 'NOTSET' -or
-                $ExploitProt.ASLR.ForceRelocateImages -eq 'ON' -or
-                $ExploitProt.ASLR.ForceRelocateImages -eq 'OFF' |
-                    Should -Be $true
+                if ($Compliance.ExploitProtection.Settings.ForceImageRandomizationIsActive) {
+                    $ExploitProt.ASLR.ForceRelocateImages -eq 'NOTSET' -or
+                    $ExploitProt.ASLR.ForceRelocateImages -eq 'ON' -or
+                    $ExploitProt.ASLR.ForceRelocateImages -eq 'OFF' |
+                        Should -Be $true
+                } else {
+                    Set-ItResult -Skipped -Because 'Test not enabled'
+                }
             }
 
             It 'Should check Randomize memory allocations (Bottom-up ASLR)' {
-                $ExploitProt.ASLR.BottomUp -eq 'NOTSET' -or  $ExploitProt.ASLR.BottomUp -eq 'Enable' |
-                    Should -Be $true
+                if ($Compliance.ExploitProtection.Settings.BottumUpASLRIsNotOff) {
+                    $ExploitProt.ASLR.BottomUp -eq 'NOTSET' -or  $ExploitProt.ASLR.BottomUp -eq 'Enable' |
+                        Should -Be $true
+                } else {
+                    Set-ItResult -Skipped -Because 'Test not enabled'
+                }
             }
 
             It 'Should check High-Entropy ASLR' {
-                $ExploitProt.ASLR.HighEntropy -eq 'NOTSET' -or  $ExploitProt.ASLR.HighEntropy -eq 'Enable' |
-                    Should -Be $true
+                if ($Compliance.ExploitProtection.Settings.HighEntropyASLRIsActive) {
+                    $ExploitProt.ASLR.HighEntropy -eq 'NOTSET' -or  $ExploitProt.ASLR.HighEntropy -eq 'Enable' |
+                        Should -Be $true
+                } else {
+                    Set-ItResult -Skipped -Because 'Test not enabled'
+                }
             }
 
             It 'Should check Exception Chains (SEHOP)' {
-                $ExploitProt.SEHOP.Enable -eq 'NOTSET' -or  $ExploitProt.SEHOP.Enable -eq 'Enable' -and
-                $ExploitProt.SEHOP.TelemetryOnly -eq 'NOTSET' -or  $ExploitProt.SEHOP.TelemetryOnly -eq 'Enable' |
-                    Should -Be $true
+                if ($Compliance.ExploitProtection.Settings.ExceptionChainsSEHOPIsActive) {
+                    $ExploitProt.SEHOP.Enable -eq 'NOTSET' -or  $ExploitProt.SEHOP.Enable -eq 'Enable' -and
+                    $ExploitProt.SEHOP.TelemetryOnly -eq 'NOTSET' -or  $ExploitProt.SEHOP.TelemetryOnly -eq 'Enable' |
+                        Should -Be $true
+                } else {
+                    Set-ItResult -Skipped -Because 'Test not enabled'
+                }
             }
 
             It 'Should check Validate Heap Integrity' {
-                $ExploitProt.Heap.TerminateOnError -eq 'NOTSET' -or  $ExploitProt.Heap.TerminateOnError -eq 'Enable' |
-                    Should -Be $true
+                if ($Compliance.ExploitProtection.Settings.ValidateHeapIntegrityIsActive) {
+                    $ExploitProt.Heap.TerminateOnError -eq 'NOTSET' -or  $ExploitProt.Heap.TerminateOnError -eq 'Enable' |
+                        Should -Be $true
+                } else {
+                    Set-ItResult -Skipped -Because 'Test not enabled'
+                }
             }
         }#end context exploit
     }
