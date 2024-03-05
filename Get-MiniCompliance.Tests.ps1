@@ -735,7 +735,9 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
             Context '- Get PowerShell Telemetry' {
 
                 It 'Should check for for PoSH 7.x Telemetry' {
-                    $ENV:POWERSHELL_TELEMETRY_OPTOUT | Should -Not -BeNullOrEmpty
+                    Check -If (
+                        [bool]$ENV:POWERSHELL_TELEMETRY_OPTOUT #| Should -Not -BeNullOrEmpty
+                    ) -IsCompliantWith $Compliance.Telemetry.Settings.PowerShell7TelemetryIsDisabled
                 }
 
             }#end context PoSH
@@ -746,19 +748,23 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
         if (
             (Test-Path $Env:ProgramFiles\'Microsoft VS Code') -or
             (Test-Path $MyLocalAppPath\Programs\'Microsoft VS Code')
-            ){#VS Code is installed
+            ) {#VS Code is installed
 
             Context '- Get VS Code Telemetry' {
 
                 $MyAppPath = [Environment]::GetFolderPath('ApplicationData')
                 $CodeSettings = get-content $MyAppPath\code\user\settings.json -ErrorAction SilentlyContinue | ConvertFrom-Json
 
-                It 'Should check for VS Code Usage data'{
-                    $CodeSettings.'telemetry.enableTelemetry' | Should -Be 'False'
+                It 'Should check for VS Code Usage data' {
+                    Check -If (
+                        -not $CodeSettings.'telemetry.enableTelemetry'
+                    ) -IsCompliantWith $Compliance.Telemetry.Settings.VSCodeUsageDataIsNotEnabled #| Should -Be 'False'
                 }
 
                 It 'Should check for VS Code Crash reports' {
-                    $CodeSettings.'telemetry.enableCrashReporter' | Should -Be 'False'
+                    Check -If (
+                        -not $CodeSettings.'telemetry.enableCrashReporter'
+                    ) -IsCompliantWith $Compliance.Telemetry.Settings.VSCodeCrashReportsIsNotEnabled # | Should -Be 'False'
                 }
 
                 #! GitLens defaults to optout but uses different values
@@ -773,30 +779,47 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
         Context '- Get Windows Telemetry' {
 
             It 'Should check for Windows Data collections Telemetry'{
-                if ((Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection).AllowTelemetry -eq 0){
-                    Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'not required (NOT compliant)'
-                }
+                Check -If (
+                    (Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection).AllowTelemetry -eq 0
+                ) -IsCompliantWith $Compliance.Telemetry.Settings.WindowsDataCollectionIsDisabled
+                # if ((Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection).AllowTelemetry -eq 0){
+                #     Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
+                # }
+                # else {
+                #     Set-ItResult -Skipped -Because 'not required (NOT compliant)'
+                # }
             }
 
             It 'Should check for MS Customer Experience Improvement Program Telemetry'{
-                if ((Get-ItemProperty HKLM:Software\Policies\Microsoft\SQMClient\Windows -ErrorAction SilentlyContinue).CEIPEnable -eq 0){
-                    Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'not required (NOT compliant)'
-                }
+                Check -If (
+                    (Get-ItemProperty HKLM:Software\Policies\Microsoft\SQMClient\Windows -ErrorAction SilentlyContinue).CEIPEnable -eq 0
+                ) -IsCompliantWith $Compliance.Telemetry.Settings.MSCustomerExperienceImprovementProgramIsDisabled
+
+                # if ((Get-ItemProperty HKLM:Software\Policies\Microsoft\SQMClient\Windows -ErrorAction SilentlyContinue).CEIPEnable -eq 0){
+                #     Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
+                # }
+                # else {
+                #     Set-ItResult -Skipped -Because 'not required (NOT compliant)'
+                # }
             }
 
-            It 'Should check for Connected User Experiences and Telemetry running' {
-                if ((Get-Service DiagTrack).Status -eq 'Stopped'){
-                    Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'not required (NOT compliant)'
-                }
+            It 'Should check for Connected User Experiences and Telemetry Startup' {
+                Check -If (
+                    (Get-Service DiagTrack).StartType -eq 'Disabled'
+                ) -IsCompliantWith $Compliance.Telemetry.Settings.ConnectedUserExperiencesandTelemetryServiceIsDisabled
+
+                # if ((Get-Service DiagTrack).Status -eq 'Stopped'){
+                #     Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
+                # }
+                # else {
+                #     Set-ItResult -Skipped -Because 'not required (NOT compliant)'
+                # }
+            }
+
+            It 'Should check for Connected User Experiences and Telemetry Status' {
+                Check -If (
+                    (Get-Service DiagTrack).Status -eq 'Stopped'
+                ) -IsCompliantWith $Compliance.Telemetry.Settings.ConnectedUserExperiencesandTelemetryServiceIsNotRunning
             }
 
         }#end context Windows
