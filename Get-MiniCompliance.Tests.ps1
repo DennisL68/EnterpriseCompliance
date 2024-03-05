@@ -100,29 +100,62 @@ function Get-FireWallRuleProperty {
 function Check {# $true, $null, $false
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory, Position=0)]
+        [Parameter(Mandatory)]
         [Alias('If')]
         $Data,
 
-        [Parameter(Position=1)]
-        [Alias('IsLessOrEqualTo')]
-        $IsCompliantWith
+        [Parameter(ParameterSetName = 'compare')]
+        $IsCompliantWith,
+
+        [Parameter(ParameterSetName = 'le')]
+        $IsLessOrEqualTo,
+
+        [Parameter(ParameterSetName = 'ge')]
+        $IsGreaterOrEqualTo
     )
 
-    $Compliant = $ComplianceValue = $IsCompliantWith
+    $Compliant = $IsCompliantWith
+    $ComplianceValue = $IsLessOrEqualTo + $IsGreaterOrEqualTo
+    $Arg2 = $IsCompliantWith + $IsLessOrEqualTo +$IsGreaterOrEqualTo
 
-    if ([string]::IsNullOrEmpty($IsCompliantWith)) {
+    if (# Not defined
+        [string]::IsNullOrEmpty($Arg2)
+    ) {
         Set-ItResult -Skipped -Because 'Test not enabled'
+        return
     }
-    elseif (!$ComplianceValue -and $ComplianceValue -is [bool]) {
+
+    if (# Not required
+        !$Arg2 -and
+        $Arg2 -is [bool]
+    ) {
         Set-ItResult -Skipped -Because 'Test not required'
+        return
     }
-    elseif ($ComplianceValue -is [int]) {
+
+    if (# At least
+        $PSCmdlet.ParameterSetName -eq 'le' -and
+        $ComplianceValue -is [int]
+    ) {
         $Data | Should -BeLessOrEqual $ComplianceValue
+        return
     }
-    else {
+
+    if (# At most
+        $PSCmdlet.ParameterSetName -eq 'ge' -and
+        $ComplianceValue -is [int]
+    ) {
+        $Data | Should -BeGreaterOrEqual $ComplianceValue
+        return
+    }
+
+    if (# The same
+        $PSCmdlet.ParameterSetName -eq 'compare'
+    ) {
         $Data | Should -Be $Compliant
+        return
     }
+
 }
 #endregion functions
 
@@ -150,7 +183,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
     if ($Compliance.WindowsEoL.Active) {
         Context '- Check Windows version' {
 
-            It ('Should not be product End of Life' + ' (Ext)' * $Compliance.WindowsEoL.Settings.Extended) {
+            It 'Should check End of Life' {
 
                     $WindowsInfo = Get-Item "HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion" | select @{
                             l = 'OsName'
@@ -182,7 +215,7 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
                         $EndDate = [datetime]$Compliance.WindowsEoL.EndDates.$Windows[1]
                     }
 
-                    $Today -lt $EndDate | Should -BeTrue
+                    Check -If ($Today -lt $EndDate) -IsCompliantWith $Compliance.WindowsEoL.Active
             }
 
         }
@@ -192,11 +225,11 @@ Describe '- Check Windows environment Compliance'  -Tag Environment {
     if ($Compliance.WindowsLicense.Active) {
         Context '- Check license information'{
 
-            It 'Should be licensed' {
+            It 'Should check license status' {
                 $License = Get-CimInstance SoftwareLicensingProduct -Filter "PartialProductKey IS NOT NULL" |
                 where Name -like 'Windows*' | select Description, LicenseStatus
 
-                $License.LicenseStatus | Should -Be '1'
+                Check -If ($License.LicenseStatus -eq '1') -IsCompliantWith $Compliance.WindowsLicense.Settings
             }
         }
     }
@@ -210,15 +243,17 @@ Describe '- Check Security Compliance' -Tag Security {
             $WULastResults = Get-WULastResults 3>$null #Hide default warning message
             $Today = Get-Date
 
-            It "Should be updated during the last $($Compliance.WindowsUpdate.Settings.LastInstallMaxAge) days" {
-                [int]($Today - $WULastResults.LastInstallationSuccessDate).TotalDays |
-                    Should -BeLessOrEqual $Compliance.WindowsUpdate.Settings.LastInstallMaxAge
+            It 'Should check for Windows update age' {
+                Check -If (
+                    [int]($Today - $WULastResults.LastInstallationSuccessDate).TotalDays
+                ) -IsLessOrEqualTo $Compliance.WindowsUpdate.Settings.LastInstallMaxAge
             }
 
-            It 'Should not have a pending reboot' {
+            It 'Should check for pending reboot' {
                 if (($PSVersionTable.PSVersion | select Major,Minor) -like ([version]'5.1' | select Major,Minor)) {#only works with PoSH 5.1
-                    (Test-PendingReboot -SkipConfigurationManagerClientCheck).IsRebootPending |
-                        Should -Be $Compliance.WindowsUpdate.Settings.HavePendingReboot
+                    Check -If (
+                        (Test-PendingReboot -SkipConfigurationManagerClientCheck).IsRebootPending
+                    ) -IsCompliantWith $Compliance.WindowsUpdate.Settings.HavePendingReboot
                 }
                 else {
                     Set-ItResult -Skipped -Because 'Test requires PoSH 5.1'
@@ -247,41 +282,45 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
             It ('Should check running as Builtin Admin') {
-                ($BuiltinAdmin.SID -ne $MyAccount.SID) |
-                    Should -Be $Compliance.UserAccount.Settings.IsNotBuiltInAdmin
+                Check -If (
+                    $BuiltinAdmin.SID -ne $MyAccount.SID
+                ) -IsCompliantWith $Compliance.UserAccount.Settings.IsNotBuiltInAdmin
             }
 
             It ('Should check Builtin Admin account being enabled') {
-                -not $BuiltinAdmin.Enabled |
-                    Should -Be $Compliance.UserAccount.Settings.BuiltInAdminDisabled
+                Check -If (
+                    -not $BuiltinAdmin.Enabled
+                ) -IsCompliantWith $Compliance.UserAccount.Settings.BuiltInAdminDisabled
             }
 
             It ('Should check using blank passwords') {
                 Add-Type -AssemblyName System.DirectoryServices.AccountManagement
                 $PrincipalObj = New-Object System.DirectoryServices.AccountManagement.PrincipalContext('machine',$Env:COMPUTERNAME)
 
-                -not $PrincipalObj.ValidateCredentials($MyAccount.'User Name','') |
-                    Should -Be $Compliance.UserAccount.Settings.NotUsingBlankPassword
+                Check -If (
+                    -not $PrincipalObj.ValidateCredentials($MyAccount.'User Name','')
+                ) -IsCompliantWith $Compliance.UserAccount.Settings.NotUsingBlankPassword
             }
 
             It ('Should check using Auto Logon') {
                 $AutoLogon = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').AutoAdminLogon
 
-                -not $AutoLogon -eq 1 |
-                    Should -Be $Compliance.UserAccount.Settings.AutoLogonDisabled
+                Check -If (-not $AutoLogon -eq 1) -IsCompliantWith $Compliance.UserAccount.Settings.AutoLogonDisabled
             }
 
             It ('Should check storing AutoLogon password') {
                 $AutoLogonPwd = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\').DefaultPassword
 
-                [string]::IsNullOrEmpty($AutoLogonPwd) |
-                    Should -Be $Compliance.UserAccount.Settings.AutoLogonDisabled
+                Check -If (
+                    [string]::IsNullOrEmpty($AutoLogonPwd)
+                ) -IsCompliantWith $Compliance.UserAccount.Settings.AutoLogonDisabled
             }
 
             if ($IsAdmin){
                 It ('Should check complex password requirement') {
-                    $SecCfg.'System Access'.PasswordComplexity -eq 1 |
-                        Should -Be $Compliance.UserAccount.Settings.RequireComplexPassword
+                    Check -If (
+                        $SecCfg.'System Access'.PasswordComplexity -eq 1
+                    ) -IsCompliantWith $Compliance.UserAccount.Settings.RequireComplexPassword
                 }
             } else {
                 It 'Should check complex password requirement' {
@@ -314,9 +353,10 @@ Describe '- Check Security Compliance' -Tag Security {
                         $InactivityLimit = $InactivityLimit.split(',')[-1] #Only keep last part
                     }
 
-                    ($ScreenSaveActive -and $ScreenSaverIsSecure) -or
-                    $InactivityLimit -gt 0 |
-                        Should -Be $Compliance.UserAccount.Settings.LockOutScreenOn
+                    Check -If (
+                        $ScreenSaveActive -and $ScreenSaverIsSecure -or
+                        $InactivityLimit -gt 0
+                    ) -IsCompliantWith $Compliance.UserAccount.Settings.LockOutScreenOn
                 }
 
                 if (!$IsAdmin -and !($ScreenSaveActive -and $ScreenSaverIsSecure)) {
@@ -346,7 +386,10 @@ Describe '- Check Security Compliance' -Tag Security {
                     #! Get-Disk doesn't work with Dynamic disks
 
                     $EfiPart = bcdedit /enum BOOTMGR | select -Index 5 | where {$_ -like '*.efi'}
-                    ![string]::IsNullOrEmpty($EfiPart) | Should -Be $Compliance.Machine.Settings.EFIPartitionActive
+
+                    Check -If (
+                        -not [string]::IsNullOrEmpty($EfiPart)
+                    ) -IsCompliantWith $Compliance.Machine.Settings.EFIPartitionActive
                 }
                 if (!$IsAdmin) {
                     Set-ItResult -Skipped -Because 'Check requires admin privileges'
@@ -355,7 +398,7 @@ Describe '- Check Security Compliance' -Tag Security {
 
             It ('Should check for UEFI firmware Secure Boot') {
                 If ($IsAdmin) {
-                    Confirm-SecureBootUEFI | Should -Be $Compliance.Machine.Settings.UEFISecureBoot
+                    Check -If Confirm-SecureBootUEFI -IsCompliantWith $Compliance.Machine.Settings.UEFISecureBoot
                 }
                 if (!$IsAdmin) {
                     Set-ItResult -Skipped -Because 'Check requires admin privileges'
@@ -363,7 +406,7 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
             It 'Should check for TPM' {
-                $TpmDevice.Present | Should -Be $Compliance.Machine.Settings.HasTPM
+                Check -If $TpmDevice.Present -IsCompliantWith $Compliance.Machine.Settings.HasTPM
             }
 
             It 'Should check TPM version' {
@@ -377,7 +420,7 @@ Describe '- Check Security Compliance' -Tag Security {
 
             It 'Should check TPM status' {
                 if ($TpmDevice.Present) {
-                    $TpmDevice.Status -eq 'OK' | Should -Be $Compliance.Machine.Settings.TPMStatusIsOk
+                    Check -If ($TpmDevice.Status -eq 'OK') -IsCompliantWith $Compliance.Machine.Settings.TPMStatusIsOk
                 }
                 if (!$TpmDevice.Present) {
                     Set-ItResult -Skipped -Because 'Check requires TPM device'
@@ -385,19 +428,23 @@ Describe '- Check Security Compliance' -Tag Security {
             }
 
             It 'Should check Bitlocker Feature installation status' {
-                $BitLockerMod.Name -eq 'BitLocker' | Should -Be $Compliance.Machine.Settings.BitLockerInstalled
+                Check -If ($BitLockerMod.Name -eq 'BitLocker') -IsCompliantWith $Compliance.Machine.Settings.BitLockerInstalled
             }
 
             It 'Should check BitLocker activatation for OS Volume' {
                 if ($IsAdmin) {
-                    $OsBitLockerVolume.ProtectionStatus -eq 'On' -and
-                    $OsBitLockerVolume.KeyProtector.KeyProtectorType -contains 'TPM' |
-                        Should -Be $Compliance.Machine.Settings.BitLockerOnOSVolume
+                    Check -If (
+                        $OsBitLockerVolume.ProtectionStatus -eq 'On' -and
+                      $OsBitLockerVolume.KeyProtector.KeyProtectorType -contains 'TPM'
+                    ) -IsCompliantWith $Compliance.Machine.Settings.BitLockerOnOSVolume
                 }
                 if (!$IsAdmin) {
                     $BootDrive = (Get-CimInstance Win32_Volume | where BootVolume).DriveLetter
                     $OsBitLockerProtection = (New-Object -ComObject Shell.Application).NameSpace($BootDrive).Self.ExtendedProperty('System.Volume.BitLockerProtection')
-                    @(1, 3, 5) -contains $OsBitLockerProtection | Should -Be $Compliance.Machine.Settings.BitLockerOnOSVolume
+
+                    Check -If (
+                        @(1, 3, 5) -contains $OsBitLockerProtection
+                    ) -IsCompliantWith $Compliance.Machine.Settings.BitLockerOnOSVolume
                 }
             }
 
@@ -411,21 +458,25 @@ Describe '- Check Security Compliance' -Tag Security {
                     $IsAdmin -and
                     $OsBitLockerVolume.ProtectionStatus -eq 'On'
                 ) {
-                    $OsBitLockerVolume.KeyProtector.KeyProtectorType -contains 'TpmPin' |
-                        Should -Be $Compliance.Machine.Settings.BitLockerPinEnabled
+                    Check -If (
+                        $OsBitLockerVolume.KeyProtector.KeyProtectorType -contains 'TpmPin'
+                     ) -IsCompliantWith $Compliance.Machine.Settings.BitLockerPinEnabled
                 }
             }
 
             It 'Should check UAC level' {
                 $Uac = Get-UacLevel
-                $Uac.NotifyLevelVal | Should -BeGreaterOrEqual $Compliance.Machine.Settings.LowestUACLevel
+
+                Check -If $Uac.NotifyLevelVal -IsCompliantWith $Compliance.Machine.Settings.LowestUACLevel
             }
 
             It 'Should check actions for Spectre/Meltdown (https://support.microsoft.com/help/4074629)' {
                 $Speculation = Get-SpeculationControlSettings 6>&1 #Redirect info stream to Success stream
                 $SpecMessage = $Speculation.MessageData.Message
 
-                -not $SpecMessage -Contains 'Suggested actions' | Should -Be $Compliance.Machine.Settings.SpectreMeltdownIsHandled
+                Check -If (
+                    -not $SpecMessage -Contains 'Suggested actions'
+                ) -IsCompliantWith $Compliance.Machine.Settings.SpectreMeltdownIsHandled
             }
 
             <#
