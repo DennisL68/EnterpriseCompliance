@@ -97,7 +97,7 @@ function Get-FireWallRuleProperty {
 
 }
 
-function Check {# $true, $null, $false
+function Check {# configs of $true, $null, $false and value
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -114,8 +114,6 @@ function Check {# $true, $null, $false
         $IsGreaterOrEqualTo
     )
 
-    $Compliant = $IsCompliantWith
-    $ComplianceValue = $IsLessOrEqualTo + $IsGreaterOrEqualTo
     $Arg2 = $IsCompliantWith + $IsLessOrEqualTo +$IsGreaterOrEqualTo
 
     if (# Not defined
@@ -135,7 +133,7 @@ function Check {# $true, $null, $false
 
     if (# At least
         $PSCmdlet.ParameterSetName -eq 'le' -and
-        $ComplianceValue -is [int]
+        -not ($ComplianceValue = $IsLessOrEqualTo) -is [bool]
     ) {
         $Data | Should -BeLessOrEqual $ComplianceValue
         return
@@ -143,7 +141,7 @@ function Check {# $true, $null, $false
 
     if (# At most
         $PSCmdlet.ParameterSetName -eq 'ge' -and
-        $ComplianceValue -is [int]
+        -not ($ComplianceValue = $IsGreaterOrEqualTo) -is [bool]
     ) {
         $Data | Should -BeGreaterOrEqual $ComplianceValue
         return
@@ -152,6 +150,8 @@ function Check {# $true, $null, $false
     if (# The same
         $PSCmdlet.ParameterSetName -eq 'compare'
     ) {
+        $Compliant = $IsCompliantWith
+
         $Data | Should -Be $Compliant
         return
     }
@@ -331,9 +331,9 @@ Describe '- Check Security Compliance' -Tag Security {
 
             if ($IsAdmin) {
                 It "Should check password length policy setting" {
-                    [int]($SecCfg.'System Access'.MinimumPasswordLength) |
-                        Should -BeGreaterOrEqual $Compliance.UserAccount.Settings.MinimumPasswordLength
-                    # Should -BeGreaterOrEqual 8
+                    Check -If (
+                        [int]($SecCfg.'System Access'.MinimumPasswordLength)
+                    ) -IsGreaterOrEqualTo $Compliance.UserAccount.Settings.MinimumPasswordLength
                 }
             }
 
@@ -411,7 +411,7 @@ Describe '- Check Security Compliance' -Tag Security {
 
             It 'Should check TPM version' {
                 if ($TpmDevice.Present) {
-                    $TpmVersion -ge [version]$Compliance.Machine.Settings.LowestTPMVersion | Should -BeTrue
+                    Check -If $TpmVersion -IsGreaterOrEqualTo ([version]$Compliance.Machine.Settings.LowestTPMVersion)
                 }
                 if (!$TpmDevice.Present) {
                     Set-ItResult -Skipped -Because 'Check requires TPM device'
