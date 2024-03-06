@@ -146,8 +146,20 @@
                 "WindowsDataCollectionIsDisabled" : null,
                 "MSCustomerExperienceImprovementProgramIsDisabled" : null,
                 "ConnectedUserExperiencesandTelemetryServiceIsDisabled" : null,
-                "ConnectedUserExperiencesandTelemetryServiceIsNotRunning" : null
+                "ConnectedUserExperiencesandTelemetryServiceIsNotRunning" : null,
+
+                "BlockPrivacyBlackList" : null
+            },
+
+            "PrivacyBlackList" : [
+                
+            ],
+
+            "PrivacyBlackListLink" : {
+                "WinOffice" : "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/domains/native.winoffice.txt"
             }
+
+                
         }
     }
 ]

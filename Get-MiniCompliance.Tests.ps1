@@ -776,7 +776,7 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
             }#end context VS Code
         }#end if
 
-        Context '- Get Windows Telemetry' {
+        Context '- Get Windows and Office Telemetry' {
 
             It 'Should check for Windows Data collections Telemetry'{
                 Check -If (
@@ -820,6 +820,45 @@ Describe '- Check MS Telemetry Compliance' -Tag Telemetry {
                 Check -If (
                     (Get-Service DiagTrack).Status -eq 'Stopped'
                 ) -IsCompliantWith $Compliance.Telemetry.Settings.ConnectedUserExperiencesandTelemetryServiceIsNotRunning
+            }
+
+            if ($Compliance.Telemetry.Settings.BlockPrivacyBlackList) {
+
+                $PrivacyBlackList = $Compliance.Telemetry.PrivacyBlackList
+
+                $PrivacyBlackList += (
+                    Invoke-RestMethod -Uri $Compliance.Telemetry.PrivacyBlackListLink.WinOffice
+                ).split("`n") | where {$_ -notlike '#*'}
+
+                foreach ($BlackSite in $PrivacyBlackList) {
+                    It "Should not succesfully connect to $BlackSite at TCP 80" {
+                        $socket = New-Object System.Net.Sockets.TcpClient
+
+                        try {
+                            $TcpConnect80 = $socket.ConnectAsync($BlackSite,80).Wait(800)
+                        }
+                        finally {
+                            $socket.close > $null
+                        }
+
+                        $TcpConnect80 | Should -Be 'false'
+                    }
+
+                    It "Should not succesfully connect to $BlackSite at TCP 443" {
+                        $socket = New-Object System.Net.Sockets.TcpClient
+
+                        try {
+                            $TcpConnect443 = $socket.ConnectAsync($BlackSite,443).Wait(800)
+                        }
+                        finally {
+                            $socket.close > $null
+                        }
+
+                        $TcpConnect443 | Should -Be 'false'
+                    }
+
+                }# end foreach
+
             }
 
         }#end context Windows
