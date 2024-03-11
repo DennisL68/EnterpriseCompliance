@@ -87,12 +87,13 @@ function Get-FireWallRuleProperty {
     )
 
     process {
+        $FireWallPortFilter = $FirewallRule | Get-NetFirewallPortFilter
         $FirewallRule | Select *,
-        @{ n = 'Protocol';  e={($_ | Get-NetFirewallPortFilter).Protocol} },
-        @{ n = 'LocalPort'; e={($_ | Get-NetFirewallPortFilter).LocalPort} },
-        @{ l = 'RemotePort';e={($_ | Get-NetFirewallPortFilter).RemotePort} },
-        @{ l = 'RemoteAddress';e={($_ | Get-NetFirewallAddressFilter).RemoteAddress} },
-        @{ l = 'Program';   e={($_ | Get-NetFirewallApplicationFilter).Program} }
+        @{ n = 'Protocol';  e = {$FireWallPortFilter.Protocol} },
+        @{ n = 'LocalPort'; e = {$FireWallPortFilter.LocalPort} },
+        @{ l = 'RemotePort';e = {$FireWallPortFilter.RemotePort} },
+        @{ l = 'RemoteAddress';e = {$FireWallPortFilter.RemoteAddress} },
+        @{ l = 'Program';   e = {$FireWallPortFilter.Program} }
     }
 
 }
@@ -605,7 +606,7 @@ Describe '- Check Security Compliance' -Tag Security {
     }
 
     if ($Compliance.Firewall.Active) {
-        Context '- Get Firewall Status (slow process)' {
+        Context '- Get Firewall Status' {
 
             #TODO $Rules=(New-object -ComObject HNetCfg.FWPolicy2).rules to replace Get-NetFirewallRule
 
@@ -626,92 +627,104 @@ Describe '- Check Security Compliance' -Tag Security {
 
 
             It 'Should check FireWall enabled status' {
-                $MpsSvc.StartType | Should -Be 'Automatic'
+                Check -If (
+                    $MpsSvc.StartType -eq 'Automatic'
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallIsEnabled
+                # $MpsSvc.StartType | Should -Be 'Automatic'
             }
 
             It 'Should check Firewall running status' {
-                $MpsSvc.Status | Should -Be 'Running'
+                Check -If (
+                    $MpsSvc.Status -eq 'Running'
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallIsRunning
+                # $MpsSvc.Status | Should -Be 'Running'
             }
 
             It 'Should check Firewall status for Private networks' {
-                ($FirewallProfile | where Name -like 'Private').Enabled | Should -Be $true
+                Check -If (
+                    ($FirewallProfile | where Name -like 'Private').Enabled
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallIsOnForPrivate
+                # | Should -Be $true
             }
 
-            It 'Should check Firewall rules existence in Private networks' {
-                ($FirewallRule | where Profile -like 'Private').Count | Should -BeGreaterThan 1
+            It 'Should check Firewall rule existence in Private networks' {
+                Check -If (
+                    ($FirewallRule | where Profile -like 'Private').Count -ge 1
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallRulesExistsForPrivate
+                # | Should -BeGreaterThan 1
 
             }
 
 
             It 'Should check for "allow all" rules for Private networks' {
-                if ($IsAdmin){
-                    if (($FirewallRule | where {
+                Check -If ([bool](
+                    ($FirewallRule | where {
                         $_.Profile -eq 'Private' -and
                         $_.Action -eq 'Allow' -and
-                        $_.Program -eq 'Any' -and
-                        $_.LocalPort -eq 'Any'
-                    }) -eq $null) {
-                        Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                    }
-                    else {
-                        Set-ItResult -Skipped -Because 'not required (NON compliant)'
-                    }
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'Test will take to long as non admin'
-                }
+                        (
+                            $_.Program -eq 'Any' -or
+                            $_.LocalPort -eq 'Any'
+                        )
+                    }) -eq $null)
+                ) -IsCompliantWith $Compliance.FireWall.Settings.NoAllowAllForPrivate
             }
 
 
             It 'Should check Firewall status for Public networks' {
-                ($FirewallProfile | where Name -like 'Public').Enabled | Should -Be $true
+                Check -If (
+                    ($FirewallProfile | where Name -like 'Public').Enabled
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallIsOnForPublic
+                # ($FirewallProfile | where Name -like 'Public').Enabled | Should -Be $true
             }
 
             It 'Should check Firewall rules existence in Public networks' {
-                ($FirewallRule | where Profile -like 'Public').Count | Should -BeGreaterThan 1
+                Check -If (
+                    ($FirewallRule | where Profile -like 'Public').Count -ge 1
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallRulesExistsForPublic
+                # | Should -BeGreaterThan 1
 
             }
 
             It 'Should check for "allow all" rules for Public networks' {
-                if ($IsAdmin){
-                    ($FirewallRule | where {
+                Check -If (
+                    [bool](($FirewallRule | where {
                         $_.Profile -eq 'Public' -and
                         $_.Action -eq 'Allow' -and
-                        $_.Program -eq 'Any' -and
-                        $_.LocalPort -eq 'Any'
-                    }) | Should -BeNullOrEmpty
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'Test will take to long as non admin'
-                }
+                        (
+                            $_.Program -eq 'Any' -or
+                            $_.LocalPort -eq 'Any'
+                        )
+                    }) -eq $null)
+                ) -IsCompliantWith $Compliance.FireWall.Settings.NoAllowAllForPublic
+                    # | Should -BeNullOrEmpty
             }
 
             It 'Should check Firewall status for Domain networks' {
-                ($FirewallProfile | where Name -like 'Domain').Enabled | Should -Be $true
+                Check -If (
+                    ($FirewallProfile | where Name -like 'Domain').Enabled
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallIsOnForDomain
+                # | Should -Be $true
             }
 
             It 'Should check Firewall rules existence in Domain networks' {
-                ($FirewallRule | where Profile -like 'Domain').Count | Should -BeGreaterThan 1
+                Check -If (
+                    ($FirewallRule | where Profile -like 'Domain').Count -ge 1
+                ) -IsCompliantWith $Compliance.FireWall.Settings.FireWallRulesExistsForDomain
+                # | Should -BeGreaterThan 1
 
             }
 
             It 'Should check for "allow all rule" for Domain networks' {
-                if ($IsAdmin){
-                    if (($FirewallRule | where {
+                Check -If (
+                    [bool](($FirewallRule | where {
                         $_.Profile -eq 'Domain' -and
                         $_.Action -eq 'Allow' -and
-                        $_.Program -eq 'Any' -and
-                        $_.LocalPort -eq 'Any'
-                    }) -eq $null) {
-                        Set-ItResult -Skipped -Because 'not required (COMPLIANT)'
-                    }
-                    else {
-                        Set-ItResult -Skipped -Because 'not required (NON compliant)'
-                    }
-                }
-                else {
-                    Set-ItResult -Skipped -Because 'Test will take to long as non admin'
-                }
+                        (
+                            $_.Program -eq 'Any' -or
+                            $_.LocalPort -eq 'Any'
+                        )
+                    }) -eq $null)
+                ) -IsCompliantWith $Compliance.FireWall.Settings.NoAllowAllForDomain
             }
 
         }#end context Firewall
