@@ -162,7 +162,7 @@ function Check {# configs of $true, $null, $false and value
 
 $IsAdmin = [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match 'S-1-5-32-544')
 
-$Compliance = Get-Content .\compliance.json | ConvertFrom-Json
+$Compliance = Get-Content $PSScriptRoot\compliance.json | ConvertFrom-Json
 
 if (Test-Path ~\compliance.json) {
     $Compliance = Get-Content ~\compliance.json | ConvertFrom-Json
